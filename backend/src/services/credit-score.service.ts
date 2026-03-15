@@ -30,6 +30,10 @@ export class CreditScoreService {
     let maxTenureMonths = 0;
     let totalContributed = 0;
 
+    // Accumulators for per-member growth scores and streaks (aggregated after the loop)
+    const memberGrowthScores: number[] = [];
+    const memberStreaks: number[] = [];
+
     for (const member of members) {
       totalContributed += Number(member.totalContributed);
       
@@ -47,6 +51,41 @@ export class CreditScoreService {
         }
       }
 
+      // ── Contribution growth score (per member) ─────────────────────────────
+      // Compare average paid amount across first 3 vs last 3 paid contributions.
+      // A member paying more over time scores higher; flat or declining scores lower.
+      const paidContributions = member.contributions
+        .filter(c => c.status === 'paid')
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+      if (paidContributions.length >= 2) {
+        const first3 = paidContributions.slice(0, 3);
+        const last3  = paidContributions.slice(-3);
+        const avgFirst = first3.reduce((s, c) => s + Number(c.paidAmount), 0) / first3.length;
+        const avgLast  = last3.reduce((s, c)  => s + Number(c.paidAmount), 0) / last3.length;
+        const memberGrowthScore = avgFirst === 0
+          ? 70
+          : Math.min(Math.round((avgLast / avgFirst) * 70), 100);
+        memberGrowthScores.push(memberGrowthScore);
+      }
+
+      // ── Per-member streak (newest → oldest, break on first miss) ─────────────
+      // Stricter than a cross-chama walk because a missed payment in any chama
+      // this member belongs to breaks their current streak.
+      const sortedNewestFirst = member.contributions
+        .filter(c => c.status !== 'pending')
+        .sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
+
+      let memberStreak = 0;
+      for (const c of sortedNewestFirst) {
+        if (c.status === 'paid' && c.paidAt && c.paidAt <= c.dueDate) {
+          memberStreak++;
+        } else {
+          break; // streak is broken — stop counting
+        }
+      }
+      memberStreaks.push(memberStreak);
+
       for (const loan of member.borrowedLoans) {
         if (loan.status === 'completed' || loan.status === 'defaulted' || loan.status === 'active') {
            totalLoans++;
@@ -58,20 +97,14 @@ export class CreditScoreService {
       }
     }
 
-    // ── Consecutive on-time streak ────────────────────────────────────────────
-    // Sort all contributions chronologically and walk forward.
-    // Streak increments on paid-on-time, resets to 0 on any miss or late payment.
-    allContributions.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-    let consecutiveOnTime = 0;
-    for (const cont of allContributions) {
-      if (cont.status === 'pending') continue; // not yet due — don't break streak
-      const onTime = cont.paidAt !== null && cont.paidAt <= cont.dueDate && cont.status === 'paid';
-      if (onTime) {
-        consecutiveOnTime++;
-      } else {
-        consecutiveOnTime = 0; // streak broken by a late/missed payment
-      }
-    }
+    // ── Aggregate streak and growth across all chamas ────────────────────────
+    // Streak: use the minimum streak across all chamas (a miss anywhere counts).
+    const consecutiveOnTime = memberStreaks.length > 0 ? Math.min(...memberStreaks) : 0;
+
+    // Growth: average the per-member growth scores.
+    const contributionGrowthScore = memberGrowthScores.length > 0
+      ? Math.round(memberGrowthScores.reduce((a, b) => a + b, 0) / memberGrowthScores.length)
+      : 70; // neutral default if no paid history yet
 
     // Payment consistency  (35%)
     let paymentConsistencyScore = 0;
@@ -89,9 +122,8 @@ export class CreditScoreService {
     let tenureScore = Math.min(Math.round((maxTenureMonths / 36) * 100), 100);
 
     // Contribution Growth (10%)
-    // Naïve calculation right now since tracking full history cleanly requires aggregation
-    // Giving neutral 70 for now
-    let contributionGrowthScore = 70;
+    // Real: compares average paid amount in first 3 vs last 3 contributions per member.
+    // Falls back to neutral 70 if member has fewer than 2 paid contributions.
 
     // Penalty Record (10%)
     let penaltyRecordScore = Math.max(100 - (totalLatePenaltiesCount * 5), 0);
@@ -132,13 +164,15 @@ export class CreditScoreService {
    */
   public static async recalculateAll() {
     const users = await prisma.user.findMany({
-      where: {
-         chamaMemberships: { some: {} }
-      }
+      where: { chamaMemberships: { some: {} } }
     });
 
-    for (const user of users) {
-       await this.calculateUserScore(user.id);
+    // Process in parallel batches of 50 to avoid sequential bottleneck at scale.
+    // At 100k users, sequential would take hours; batched parallel is ~50x faster.
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < users.length; i += BATCH_SIZE) {
+      const batch = users.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(u => this.calculateUserScore(u.id)));
     }
   }
 }
