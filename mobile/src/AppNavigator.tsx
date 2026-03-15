@@ -42,6 +42,14 @@ import InvestmentDashboardScreen from "./screens/InvestmentDashboardScreen";
 import WelfareSetupScreen from "./screens/WelfareSetupScreen";
 import LoanEligibilityScreen from "./screens/LoanEligibilityScreen";
 import PerksScreen from "./screens/PerksScreen";
+import WelcomeScreen from "./screens/WelcomeScreen";
+import JoinChamaScreen from "./screens/JoinChamaScreen";
+
+// ── Context & New Screens ──
+import { ChamaProvider, useChamaContext } from "./context/ChamaContext";
+import PortfolioScreen from "./screens/PortfolioScreen";
+import FundsScreen from "./screens/FundsScreen";
+import DealsScreen from "./screens/DealsScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -82,6 +90,8 @@ function TabIcon({
 // ─── Main bottom-tab navigator ──────────────────────────────────────────────
 
 function MainTabNavigator() {
+  const { activeChamaType } = useChamaContext();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -108,15 +118,51 @@ function MainTabNavigator() {
           ),
         }}
       />
-      <Tab.Screen
-        name="Loans"
-        component={GroupLoanScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="dollar-sign" label="Loans" focused={focused} />
-          ),
-        }}
-      />
+
+      {/* ─── DYNAMIC MIDDLE TAB ─── */}
+      {activeChamaType === "investment" ? (
+        <Tab.Screen
+          name="Portfolio"
+          component={PortfolioScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="bar-chart-2" label="Portfolio" focused={focused} />
+            ),
+          }}
+        />
+      ) : activeChamaType === "hybrid" ? (
+        <Tab.Screen
+          name="Funds"
+          component={FundsScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="sliders" label="Funds" focused={focused} />
+            ),
+          }}
+        />
+      ) : activeChamaType === "group_purchase" ? (
+        <Tab.Screen
+          name="Deals"
+          component={DealsScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="shopping-bag" label="Deals" focused={focused} />
+            ),
+          }}
+        />
+      ) : (
+        // MGR & Welfare default to Loans
+        <Tab.Screen
+          name="Loans"
+          component={GroupLoanScreen}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="dollar-sign" label="Loans" focused={focused} />
+            ),
+          }}
+        />
+      )}
+
       <Tab.Screen
         name="Score"
         component={MemberCreditProfileScreen}
@@ -143,10 +189,13 @@ function MainTabNavigator() {
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
+    <ChamaProvider>
+      <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="JoinChama" component={JoinChamaScreen} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         {/* Chama creation flow */}
         <Stack.Screen name="ChamaType" component={ChamaTypeScreen} />
@@ -172,6 +221,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Placeholder" component={PlaceholderScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+    </ChamaProvider>
   );
 }
 

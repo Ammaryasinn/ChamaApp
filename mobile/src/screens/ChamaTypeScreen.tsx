@@ -29,9 +29,10 @@ function HeroCircles() {
 }
 
 function ProgressBar({ step, total }: { step: number; total: number }) {
+  const pct = (step / total) * 100;
   return (
     <View style={S.progressTrack}>
-      <View style={[S.progressFill, { width: `${(step / total) * 100}%` as any }]} />
+      <View style={[S.progressFill, { width: `${pct}%` as any }]} />
     </View>
   );
 }
@@ -175,27 +176,31 @@ const TYPE_ICON_BG: Record<string, string> = {
   investment:     "#DBEAFE",
   welfare:        "#EDE9FE",
   hybrid:         "#D1FAE5",
+  group_purchase: "#FEF3C7",
 };
 const TYPE_FEATHER: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
   merry_go_round: "rotate-cw",
   investment:     "trending-up",
   welfare:        "shield",
   hybrid:         "sliders",
+  group_purchase: "shopping-bag",
 };
 const TYPE_COLOR: Record<string, string> = {
   merry_go_round: "#D97706",
   investment:     "#3B82F6",
   welfare:        "#7C3AED",
   hybrid:         "#059669",
+  group_purchase: "#D97706",
 };
 
-type ChamaTypeId = "merry_go_round" | "investment" | "welfare" | "hybrid";
+type ChamaTypeId = "merry_go_round" | "investment" | "welfare" | "hybrid" | "group_purchase";
 
 const CHAMA_TYPES = [
   { id: "merry_go_round" as ChamaTypeId, title: "Merry-go-round", swahili: "Mchezo",        description: "Pot rotates to one member per cycle until all have received.", badge: "MOST POPULAR", bestFor: "Predictable lump-sum payouts" },
-  { id: "investment"     as ChamaTypeId, title: "Investment chama", swahili: "Uwekezaji",   description: "Group votes on stocks, land, unit trusts, or a business.",   bestFor: "Long-term wealth building" },
+  { id: "investment"     as ChamaTypeId, title: "Investment",       swahili: "Uwekezaji",   description: "Group votes on stocks, land, unit trusts, or a business.",   bestFor: "Long-term wealth building" },
   { id: "welfare"        as ChamaTypeId, title: "Welfare / savings", swahili: "Akiba",      description: "Borrow from the group pot at low interest.",                 bestFor: "Emergency affordable credit" },
   { id: "hybrid"         as ChamaTypeId, title: "Hybrid",            swahili: "Mchanganyiko", description: "Combine two or three types with a custom split.",          bestFor: "Maximum flexibility" },
+  { id: "group_purchase" as ChamaTypeId, title: "Group purchase",    swahili: "Nunua Pamoja", description: "Members save together to buy the same product for every household — one per cycle.", bestFor: "Appliances, furniture, solar, insurance" },
 ];
 
 const TYPE_ROUTE: Record<ChamaTypeId, string> = {
@@ -203,6 +208,7 @@ const TYPE_ROUTE: Record<ChamaTypeId, string> = {
   investment:     "InvestmentSetup",
   welfare:        "WelfareSetup",
   hybrid:         "InviteMembers",
+  group_purchase: "Placeholder",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -402,7 +408,7 @@ export default function ChamaTypeScreen({ navigation }: any) {
           <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
             <Feather name="chevron-left" size={18} color="#fff" />
           </Pressable>
-          <Text style={S.heroNavTitle}>New chama · Step 2 of 3</Text>
+          <Text style={S.heroNavTitle}>New chama · Step 2 of{"\n"}3</Text>
         </View>
         <ProgressBar step={2} total={3} />
         <Text style={S.heroTitle}>Choose your{"\n"}chama type</Text>
