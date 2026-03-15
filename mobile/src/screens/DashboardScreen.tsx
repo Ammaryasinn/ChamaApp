@@ -1,886 +1,333 @@
-import React, { useEffect, useState } from "react";
-import {
-  Colors,
-  FontFamily,
-  FontSize,
-  FontWeight,
-  Radius,
-  Shadow,
-  Spacing,
-} from "../theme";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Pressable,
-  Platform,
+  TouchableOpacity,
+  FlatList,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
-import { apiClient } from "../api/client";
+import { Feather } from "@expo/vector-icons";
+import { Colors, FontFamily, FontSize, Radius, Spacing, Shadow } from "../theme";
 
-// ─── Shared shadow — now sourced from theme tokens ────────────────────────────
-const CARD_SHADOW = Shadow.sm as object;
+// ─────────────────────────────────────────────────────────────────────────────
+//  Shared helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Component ────────────────────────────────────────────────────────────────
-export default function DashboardScreen({ navigation }: any) {
-  const [user, setUser] = useState<any>(null);
-  const [chamas, setChamas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const initData = async () => {
-      try {
-        const val = await AsyncStorage.getItem("hazina.user");
-        if (val) setUser(JSON.parse(val));
-
-        const res = await apiClient.get("/chamas");
-        setChamas(res.data);
-      } catch (err) {
-        console.warn("Failed to fetch chamas", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initData();
-  }, []);
-
-  const handleProfilePress = () => navigation.navigate("Settings");
-
-  const activeChama = chamas[0];
-  const balance = activeChama?.totalGroupFloat ?? 124500;
-  const chamaName = activeChama?.name ?? "Mama Mboga Investment Group";
-  const membersCount = 12;
-  const firstName = user?.fullName?.split(" ")[0] ?? "User";
-  const avatarLetter = user?.fullName?.[0]?.toUpperCase() ?? "U";
-
-  // ── Empty state ─────────────────────────────────────────────────────────────
-  if (!loading && chamas.length === 0) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <StatusBar style="light" />
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-        >
-          {/* Dark hero */}
-          <LinearGradient
-            colors={[Colors.surfaceDeepDark, Colors.surfaceDark, "#0D2E22"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.hero}
-          >
-            <View style={styles.headerRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.welcomeTitle}>Welcome, {firstName} 👋</Text>
-                <Text style={styles.welcomeSub}>
-                  No chamas yet — create one below
-                </Text>
-              </View>
-              <Pressable
-                onPress={handleProfilePress}
-                style={styles.avatarCircle}
-              >
-                <Text style={styles.avatarLetter}>{avatarLetter}</Text>
-              </Pressable>
-            </View>
-          </LinearGradient>
-
-          {/* Empty card */}
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIconWrap}>
-              <Text style={styles.emptyEmoji}>🌱</Text>
-            </View>
-            <Text style={styles.emptyTitle}>Ready to grow your money?</Text>
-            <Text style={styles.emptyDesc}>
-              Join a friends group or start your own Chama today and become its
-              Chairperson.
-            </Text>
-
-            <Pressable
-              style={styles.btnPrimary}
-              onPress={() => navigation.navigate("ChamaType")}
-            >
-              <Text style={styles.btnPrimaryText}>Create a Chama</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.btnOutlineGreen}
-              onPress={() => navigation.navigate("PremiumSubscription")}
-            >
-              <Text style={styles.btnOutlineGreenText}>View Pricing Plans</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // ── Main dashboard ───────────────────────────────────────────────────────────
+function HeroCircles() {
   return (
-    <SafeAreaView style={styles.screen}>
+    <>
+      <View style={S.circleTopRight} />
+      <View style={S.circleBottomLeft} />
+    </>
+  );
+}
+
+function HazinaLogo() {
+  return (
+    <Text style={S.logo}>
+      <Text style={{ color: "#FFFFFF" }}>Hazi</Text>
+      <Text style={{ color: "#F59E0B" }}>na</Text>
+    </Text>
+  );
+}
+
+function StatusPill({ paid, pending, late }: { paid: number; pending: number; late: number }) {
+  return (
+    <View style={S.pill}>
+      <Text style={S.pillPaid}>{paid} paid</Text>
+      <Text style={S.pillDot}>·</Text>
+      <Text style={S.pillPending}>{pending} pending</Text>
+      <Text style={S.pillDot}>·</Text>
+      <Text style={S.pillLate}>{late} late</Text>
+    </View>
+  );
+}
+
+// Status badge for activity rows
+function StatusBadge({ status }: { status: "paid" | "pending" | "late" }) {
+  const map = {
+    paid:    { bg: "#ECFDF5", text: "#059669", label: "Paid" },
+    pending: { bg: "#FFFBEB", text: "#D97706", label: "Pending" },
+    late:    { bg: "#FEF2F2", text: "#DC2626", label: "Late" },
+  };
+  const { bg, text, label } = map[status];
+  return (
+    <View style={[S.badge, { backgroundColor: bg }]}>
+      <Text style={[S.badgeText, { color: text }]}>{label}</Text>
+    </View>
+  );
+}
+
+// Member avatar chip
+function Avatar({ initials, color }: { initials: string; color: string }) {
+  return (
+    <View style={[S.avatar, { backgroundColor: color }]}>
+      <Text style={S.avatarText}>{initials}</Text>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Mock data
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ROTATION = [
+  { initials: "WK", name: "Wanjiru", month: "Feb", color: "#006D5B", done: true },
+  { initials: "AO", name: "Akinyi",  month: "Mar", color: "#3B82F6", done: true },
+  { initials: "MM", name: "Muthoni", month: "Apr", color: "#F59E0B", isCurrent: true },
+  { initials: "KM", name: "Kamau",   month: "May", color: "#7C3AED" },
+  { initials: "JN", name: "Jane",    month: "Jun", color: "#EC4899" },
+];
+
+const ACTIVITY = [
+  { name: "Wanjiru Kamau",  sub: "Today · 8:42 AM",             amount: "+Ksh 5,000", status: "paid"    as const, icon: "check-circle"  as const },
+  { name: "Akinyi Otieno",  sub: "Due today",                    amount: "Ksh 5,000",  status: "pending" as const, icon: "clock"          as const },
+  { name: "Muthoni Mwangi", sub: "3 days late · +Ksh 200 penalty", amount: "Ksh 5,000",  status: "late"    as const, icon: "x-circle"       as const },
+];
+
+const ICON_COLOR: Record<string, string> = {
+  "check-circle": "#059669",
+  "clock":        "#D97706",
+  "x-circle":     "#DC2626",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Screen
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function DashboardScreen({ navigation }: any) {
+  return (
+    <SafeAreaView style={S.screen}>
       <StatusBar style="light" />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        {/* ── Dark gradient hero ──────────────────────────────────────────────── */}
-        <LinearGradient
-          colors={[Colors.surfaceDeepDark, Colors.surfaceDark, "#0D2E22"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          {/* Top row: chama name + avatar */}
-          <View style={styles.headerRow}>
-            <View style={styles.groupIconWrap}>
-              <Feather name="users" size={18} color={Colors.textInverseSoft} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.headerTitle} numberOfLines={1}>
-                {chamaName}
-              </Text>
-              <Text style={styles.headerSubtitle}>
-                {membersCount} members · Chairperson
-              </Text>
-            </View>
-            <Pressable onPress={handleProfilePress} style={styles.avatarCircle}>
-              <Text style={styles.avatarLetter}>{avatarLetter}</Text>
-            </Pressable>
+
+      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
+        {/* ── Hero ── */}
+        <View style={S.hero}>
+          <HeroCircles />
+          <View style={S.heroNav}>
+            <HazinaLogo />
+            <TouchableOpacity
+              style={S.notifBtn}
+              onPress={() => {}}
+              accessibilityLabel="Notifications"
+            >
+              <Feather name="bell" size={20} color="rgba(255,255,255,0.9)" />
+            </TouchableOpacity>
           </View>
 
-          {/* Balance block */}
-          <View style={styles.heroBalanceBlock}>
-            <Text style={styles.heroBalanceLabel}>GROUP POT BALANCE</Text>
-            <Text style={styles.heroBalanceAmount}>
-              KES {balance.toLocaleString()}
-            </Text>
+          <Text style={S.greeting}>Habari za asubuhi</Text>
+          <Text style={S.userName}>Wanjiru Kamau</Text>
 
-            {/* Progress bar */}
-            <View style={styles.heroProgressTrack}>
-              <View style={[styles.heroProgressFill, { width: "83%" }]} />
-            </View>
+          <Text style={S.balanceLabel}>GROUP POT BALANCE</Text>
+          <Text style={S.balance}>Ksh 84,500</Text>
+          <Text style={S.cycleInfo}>Mama Mboga Group · Cycle 4 of 20 · Due Mar 28</Text>
 
-            {/* Pills */}
-            <View style={styles.heroPillsRow}>
-              <View style={styles.heroPill}>
-                <Text style={styles.heroPillText}>✓ 10 paid this cycle</Text>
-              </View>
-              <View style={[styles.heroPill, styles.heroPillAmber]}>
-                <Text style={styles.heroPillTextAmber}>! 2 pending</Text>
-              </View>
-              <View style={styles.heroPill}>
-                <Text style={styles.heroPillText}>Feb 28 due</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* ── Quick Actions ──────────────────────────────────────────────────── */}
-        <View style={styles.actionsRow}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              pressed && styles.actionBtnPressed,
-            ]}
-            onPress={() => navigation.navigate("ContributionDay")}
-          >
-            <Feather name="dollar-sign" size={17} color={Colors.primary} />
-            <Text style={styles.actionBtnLabel}>Collect</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              pressed && styles.actionBtnPressed,
-            ]}
-            onPress={() => navigation.navigate("Members")}
-          >
-            <Feather name="users" size={17} color={Colors.primary} />
-            <Text style={styles.actionBtnLabel}>Members</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              pressed && styles.actionBtnPressed,
-            ]}
-            onPress={() => navigation.navigate("GroupLoan")}
-          >
-            <Feather name="credit-card" size={17} color={Colors.primary} />
-            <Text style={styles.actionBtnLabel}>Loans</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionBtn,
-              pressed && styles.actionBtnPressed,
-            ]}
-            onPress={() => navigation.navigate("InviteMembers")}
-          >
-            <Feather name="user-plus" size={17} color={Colors.primary} />
-            <Text style={styles.actionBtnLabel}>Invite</Text>
-          </Pressable>
+          <StatusPill paid={14} pending={4} late={2} />
         </View>
 
-        {/* ── This Cycle — Contributions ─────────────────────────────────────── */}
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionLabel}>THIS CYCLE</Text>
-          <Pressable onPress={() => navigation.navigate("Members")}>
-            <Text style={styles.viewAll}>View all</Text>
-          </Pressable>
-        </View>
+        {/* White body */}
+        <View style={S.body}>
+          {/* MGR Rotation */}
+          <View style={S.section}>
+            <View style={S.sectionHeader}>
+              <Text style={S.sectionTitle}>MGR rotation</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("MGRSchedule")}>
+                <Text style={S.seeAll}>See all</Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* Member list card */}
-        <View style={styles.memberCard}>
-          {/* Alice Wambui — PAID */}
-          <View style={styles.memberRow}>
-            <View style={[styles.memberAvatar, { backgroundColor: "#D1FAE5" }]}>
-              <Text style={[styles.memberInitials, { color: "#065F46" }]}>
-                AW
-              </Text>
-            </View>
-            <View style={styles.memberMeta}>
-              <Text style={styles.memberName}>Alice Wambui</Text>
-              <Text style={styles.memberAmt}>KES 5,000</Text>
-            </View>
-            <View style={styles.badgePaid}>
-              <Text style={styles.badgePaidText}>PAID</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.rotationRow}>
+              {ROTATION.map((r, i) => (
+                <View key={i} style={[S.rotationCard, r.isCurrent && S.rotationCardCurrent]}>
+                  <View style={[S.rotationAvatar, { backgroundColor: r.isCurrent ? "#F59E0B" : r.color }]}>
+                    <Text style={S.rotationInitials}>{r.initials}</Text>
+                  </View>
+                  <Text style={[S.rotationName, r.isCurrent && { color: "#FFFFFF" }]}>{r.name}</Text>
+                  <View style={S.rotationBottom}>
+                    <Text style={[S.rotationMonth, r.isCurrent && { color: "rgba(255,255,255,0.8)" }]}>{r.month}</Text>
+                    {r.done      && <Feather name="check" size={12} color="rgba(255,255,255,0.8)" style={{ marginLeft: 2 }} />}
+                    {r.isCurrent && (
+                      <View style={S.nowBadge}><Text style={S.nowBadgeText}>NOW</Text></View>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Recent activity */}
+          <View style={S.section}>
+            <Text style={S.sectionTitle}>Recent activity</Text>
+            <View style={S.activityList}>
+              {ACTIVITY.map((a, i) => (
+                <View key={i} style={S.activityRow}>
+                  <Feather name={a.icon} size={20} color={ICON_COLOR[a.icon]} />
+                  <View style={S.activityMeta}>
+                    <Text style={S.activityName}>{a.name}</Text>
+                    <Text style={S.activitySub}>{a.sub}</Text>
+                  </View>
+                  <Text style={[
+                    S.activityAmount,
+                    a.status === "paid"    && { color: "#059669" },
+                    a.status === "pending" && { color: "#D97706" },
+                    a.status === "late"    && { color: "#DC2626" },
+                  ]}>
+                    {a.amount}
+                  </Text>
+                </View>
+              ))}
             </View>
           </View>
 
-          <View style={styles.memberDivider} />
-
-          {/* John Musyoka — LATE */}
-          <View style={styles.memberRow}>
-            <View style={[styles.memberAvatar, { backgroundColor: "#DBEAFE" }]}>
-              <Text style={[styles.memberInitials, { color: "#1D4ED8" }]}>
-                JM
-              </Text>
-            </View>
-            <View style={styles.memberMeta}>
-              <Text style={styles.memberName}>John Musyoka</Text>
-              <Text style={styles.memberAmt}>KES 5,000</Text>
-            </View>
-            <View style={styles.badgeLate}>
-              <Text style={styles.badgeLateText}>LATE +200</Text>
-            </View>
-          </View>
-
-          <View style={styles.memberDivider} />
-
-          {/* Catherine Njeri — PENDING */}
-          <View style={styles.memberRow}>
-            <View style={[styles.memberAvatar, { backgroundColor: "#F3F4F6" }]}>
-              <Text style={[styles.memberInitials, { color: "#6B7280" }]}>
-                CN
-              </Text>
-            </View>
-            <View style={styles.memberMeta}>
-              <Text style={styles.memberName}>Catherine Njeri</Text>
-              <Text style={styles.memberAmt}>KES 5,000</Text>
-            </View>
-            <View style={styles.badgePending}>
-              <Text style={styles.badgePendingText}>PENDING</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ── Member Perks Card ──────────────────────────────────────────────── */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.perksCard,
-            pressed && { opacity: 0.92 },
-          ]}
-          onPress={() => navigation.navigate("Perks")}
-        >
-          <LinearGradient
-            colors={[Colors.surfaceDeepDark, "#0D2E22"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.perksCardGradient}
-          >
-            <View style={styles.perksCardLeft}>
-              <View style={styles.perksIconWrap}>
-                <Feather name="gift" size={20} color={Colors.accent} />
+          {/* New Chama CTA */}
+          <View style={S.section}>
+            <TouchableOpacity
+              style={S.newChamaCard}
+              onPress={() => navigation.navigate("ChamaType")}
+              activeOpacity={0.85}
+            >
+              <View style={S.newChamaIcon}>
+                <Feather name="plus" size={20} color={Colors.primary} />
               </View>
-              <View>
-                <Text style={styles.perksCardTitle}>Member Perks</Text>
-                <Text style={styles.perksCardSub}>
-                  8 deals live · Chicken Inn, Java, Jumia & more
-                </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={S.newChamaTitle}>Create a new chama</Text>
+                <Text style={S.newChamaSub}>MGR, investment, welfare or hybrid</Text>
               </View>
-            </View>
-            <View style={styles.perksCardArrow}>
-              <Feather
-                name="chevron-right"
-                size={18}
-                color={Colors.textInverseSoft}
-              />
-            </View>
-          </LinearGradient>
-        </Pressable>
+              <Feather name="chevron-right" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
 
-        {/* ── Upcoming ───────────────────────────────────────────────────────── */}
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionLabel}>UPCOMING</Text>
+          {/* Collect CTA */}
+          <View style={S.section}>
+            <TouchableOpacity
+              style={S.collectBtn}
+              onPress={() => navigation.navigate("ContributionDay")}
+              activeOpacity={0.85}
+            >
+              <Feather name="credit-card" size={18} color="#FFFFFF" />
+              <Text style={S.collectBtnText}>Collect via M-Pesa</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        {/* FEB 01 — MGR payout */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.upcomingCard,
-            pressed && { opacity: 0.9 },
-          ]}
-          onPress={() => navigation.navigate("MGRSchedule")}
-        >
-          <View style={[styles.dateBox, { backgroundColor: Colors.successBg }]}>
-            <Text style={[styles.dateMonth, { color: Colors.successDark }]}>
-              FEB
-            </Text>
-            <Text style={[styles.dateDay, { color: Colors.successDark }]}>
-              01
-            </Text>
-          </View>
-          <View style={styles.upcomingMeta}>
-            <Text style={styles.upcomingTitle}>MGR payout</Text>
-            <Text style={styles.upcomingDesc}>
-              Wanjiru receives{" "}
-              <Text style={styles.upcomingHighlight}>KES 62,500</Text>
-            </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
-
-        {/* JAN 28 — Next meeting */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.upcomingCard,
-            pressed && { opacity: 0.9 },
-          ]}
-        >
-          <View
-            style={[styles.dateBox, { backgroundColor: Colors.accentLight }]}
-          >
-            <Text style={[styles.dateMonth, { color: Colors.warningDark }]}>
-              JAN
-            </Text>
-            <Text style={[styles.dateDay, { color: Colors.warningDark }]}>
-              28
-            </Text>
-          </View>
-          <View style={styles.upcomingMeta}>
-            <Text style={styles.upcomingTitle}>Next meeting</Text>
-            <Text style={styles.upcomingDesc}>
-              Sunday, 6:00 PM · Community Center
-            </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  // ── Layout ────────────────────────────────────────────────────────────────
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    paddingBottom: Spacing[16],
-  },
+// ─────────────────────────────────────────────────────────────────────────────
+//  Styles
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // ── Hero dark header ──────────────────────────────────────────────────────
+const S = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: Colors.primary },
+
+  // Hero
   hero: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Platform.OS === "ios" ? Spacing[4] : Spacing[5],
-    paddingBottom: Spacing[7],
-  },
-  profileIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.full,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Hero balance block
-  heroBalanceBlock: {
-    marginTop: Spacing[5],
-  },
-  heroBalanceLabel: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 1.5,
-    marginBottom: Spacing[1],
-  },
-  heroBalanceAmount: {
-    color: Colors.accent,
-    fontSize: FontSize["7xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: -1.5,
-    lineHeight: 50,
-    marginBottom: Spacing[4],
-  },
-  heroProgressTrack: {
-    height: 6,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: Radius.full,
-    overflow: "hidden",
-    marginBottom: Spacing[3],
-  },
-  heroProgressFill: {
-    height: 6,
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.full,
-  },
-  heroPillsRow: {
-    flexDirection: "row",
-    gap: Spacing[2],
-  },
-  heroPill: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[1.5],
-    borderRadius: Radius.full,
-  },
-  heroPillText: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-  heroPillAmber: {
-    backgroundColor: "rgba(245,158,11,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(245,158,11,0.3)",
-  },
-  heroPillTextAmber: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-
-  // ── Content area (white) ─────────────────────────────────────────────────
-  contentPad: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[5],
-  },
-
-  // ── Header shared ─────────────────────────────────────────────────────────
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[3],
-    marginBottom: Spacing[2],
-  },
-  avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.full,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarLetter: {
-    color: Colors.textInverse,
-    fontSize: FontSize.xl,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-
-  // ── Empty-state header ────────────────────────────────────────────────────
-  welcomeTitle: {
-    color: Colors.textInverse,
-    fontSize: FontSize.xl,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: -0.3,
-  },
-  welcomeSub: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    marginTop: 2,
-    opacity: 0.85,
-  },
-
-  // ── Dashboard header ──────────────────────────────────────────────────────
-  groupIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.full,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  groupIcon: {
-    fontSize: FontSize["2xl"],
-  },
-  headerTitle: {
-    color: Colors.textInverse,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: -0.2,
-  },
-  headerSubtitle: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-    marginTop: 1,
-    opacity: 0.85,
-  },
-
-  // ── Empty state card ──────────────────────────────────────────────────────
-  emptyCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.cardLg,
-    paddingHorizontal: Spacing[7],
-    paddingVertical: Spacing[9],
-    alignItems: "center",
-    marginTop: Spacing[5],
-    marginHorizontal: Spacing[5],
-    ...CARD_SHADOW,
-  },
-  emptyIconWrap: {
-    width: 84,
-    height: 84,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primaryTint,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[6],
-  },
-  emptyEmoji: {
-    fontSize: 38,
-  },
-  emptyTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[3],
-    textAlign: "center",
-    letterSpacing: -0.2,
-  },
-  emptyDesc: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.md,
-    lineHeight: 23,
-    textAlign: "center",
-    marginBottom: Spacing[8],
-  },
-  btnPrimary: {
     backgroundColor: Colors.primary,
-    borderRadius: Radius.button,
-    paddingVertical: 15,
-    width: "100%",
-    alignItems: "center",
-    marginBottom: Spacing[3],
-  },
-  btnPrimaryText: {
-    color: Colors.textInverse,
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  btnOutlineGreen: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderRadius: Radius.button,
-    paddingVertical: 14,
-    width: "100%",
-    alignItems: "center",
-  },
-  btnOutlineGreenText: {
-    color: Colors.primary,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  // ── Quick actions ─────────────────────────────────────────────────────────
-  actionsRow: {
-    flexDirection: "row",
-    gap: Spacing[3],
-    marginBottom: Spacing[6],
-    paddingHorizontal: Spacing[5],
-    marginTop: Spacing[5],
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    paddingVertical: 14,
-    borderRadius: Radius.button,
-    ...CARD_SHADOW,
-  },
-  actionBtnPressed: {
-    backgroundColor: Colors.primaryLight,
-  },
-  actionBtnIcon: {
-    fontSize: FontSize.xl,
-  },
-  actionBtnLabel: {
-    color: Colors.primary,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  // ── Section header ────────────────────────────────────────────────────────
-  sectionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing[3],
-    paddingHorizontal: Spacing[5],
-  },
-  sectionLabel: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 1.4,
-  },
-  viewAll: {
-    color: Colors.primary,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-
-  // ── Member list card ──────────────────────────────────────────────────────
-  memberCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.card,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
     overflow: "hidden",
-    marginBottom: Spacing[4],
-    marginHorizontal: Spacing[5],
-    ...CARD_SHADOW,
+    gap: 4,
   },
-  memberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing[4],
-    paddingVertical: 14,
+  circleTopRight: {
+    position: "absolute", width: 200, height: 200, borderRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.05)", top: -60, right: -60,
   },
-  memberDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginHorizontal: Spacing[4],
+  circleBottomLeft: {
+    position: "absolute", width: 160, height: 160, borderRadius: 80,
+    backgroundColor: "rgba(245,158,11,0.10)", bottom: -50, left: -40,
   },
-  memberAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 13,
+  heroNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  logo: { fontFamily: FontFamily.extraBold, fontSize: 22, fontWeight: "800", letterSpacing: -0.4 },
+  notifBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center", justifyContent: "center",
   },
-  memberInitials: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  memberMeta: {
-    flex: 1,
-  },
-  memberName: {
-    color: Colors.textPrimary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    marginBottom: 3,
-  },
-  memberAmt: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-  },
+  greeting: { fontFamily: FontFamily.regular, fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 4 },
+  userName:  { fontFamily: FontFamily.extraBold, fontSize: 20, color: "#FFFFFF", fontWeight: "800", marginBottom: 12 },
+  balanceLabel: { fontFamily: FontFamily.semiBold, fontSize: 10, color: "rgba(255,255,255,0.55)", letterSpacing: 1, textTransform: "uppercase" },
+  balance:  { fontFamily: FontFamily.extraBold, fontSize: 38, color: "#FFFFFF", fontWeight: "800", letterSpacing: -1, lineHeight: 46 },
+  cycleInfo: { fontFamily: FontFamily.regular, fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12, lineHeight: 17 },
 
-  // badges
-  badgePaid: {
-    backgroundColor: Colors.successBg,
-    paddingHorizontal: 9,
-    paddingVertical: Spacing[1],
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.successLight,
+  // Status pill
+  pill: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(0,0,0,0.25)", borderRadius: 99,
+    paddingHorizontal: 12, paddingVertical: 5,
   },
-  badgePaidText: {
-    color: Colors.successDark,
-    fontSize: FontSize.micro,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.6,
-  },
-  badgeLate: {
-    backgroundColor: Colors.accentTint,
-    paddingHorizontal: 9,
-    paddingVertical: Spacing[1],
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.warningLight,
-  },
-  badgeLateText: {
-    color: Colors.warningDark,
-    fontSize: FontSize.micro,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.6,
-  },
-  badgePending: {
-    backgroundColor: Colors.background,
-    paddingHorizontal: 9,
-    paddingVertical: Spacing[1],
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  badgePendingText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.micro,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.6,
-  },
+  pillPaid:    { fontFamily: FontFamily.heading, fontSize: 11, color: "#FFFFFF", fontWeight: "700" },
+  pillPending: { fontFamily: FontFamily.heading, fontSize: 11, color: "#F59E0B", fontWeight: "700" },
+  pillLate:    { fontFamily: FontFamily.heading, fontSize: 11, color: "#FCA5A5", fontWeight: "700" },
+  pillDot:     { color: "rgba(255,255,255,0.4)", fontSize: 14 },
 
-  // ── Upcoming cards ────────────────────────────────────────────────────────
-  // ── Perks card ────────────────────────────────────────────────────────────
-  perksCard: {
-    marginHorizontal: Spacing[5],
-    marginBottom: Spacing[5],
-    borderRadius: Radius.card,
-    overflow: "hidden",
-    ...Shadow.md,
-  },
-  perksCardGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[4],
-    borderRadius: Radius.card,
-  },
-  perksCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[3],
-    flex: 1,
-  },
-  perksIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.input,
-    backgroundColor: "rgba(245,158,11,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(245,158,11,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  perksCardTitle: {
-    color: Colors.textInverse,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: 2,
-  },
-  perksCardSub: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    opacity: 0.85,
-  },
-  perksCardArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.full,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  // Body
+  body: { backgroundColor: "#FFFFFF", paddingBottom: 100 },
 
-  upcomingCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing[4],
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: Spacing[5],
-    marginBottom: Spacing[3],
-    ...CARD_SHADOW,
+  // Section
+  section: { paddingHorizontal: 20, paddingTop: 20 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  sectionTitle: { fontFamily: FontFamily.heading, fontSize: 16, color: Colors.textPrimary, fontWeight: "700" },
+  seeAll:       { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.primary },
+
+  // MGR Rotation
+  rotationRow: { gap: 10, paddingBottom: 4 },
+  rotationCard: {
+    width: 72, alignItems: "center", gap: 6,
+    backgroundColor: "#F6F9F7", borderRadius: 12,
+    padding: 10, borderWidth: 1, borderColor: "#EBF1EF",
   },
-  dateBox: {
-    width: 54,
-    height: 54,
-    borderRadius: Radius.button,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing[3.5],
+  rotationCardCurrent: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  rotationAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  rotationInitials: { fontFamily: FontFamily.heading, fontSize: 13, color: "#FFFFFF", fontWeight: "700" },
+  rotationName: { fontFamily: FontFamily.medium, fontSize: 11, color: Colors.textPrimary, textAlign: "center" },
+  rotationBottom: { flexDirection: "row", alignItems: "center", gap: 2 },
+  rotationMonth: { fontFamily: FontFamily.regular, fontSize: 10, color: Colors.textMuted },
+  nowBadge: { backgroundColor: "#F59E0B", borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, marginTop: 2 },
+  nowBadgeText: { fontFamily: FontFamily.heading, fontSize: 8, color: "#FFFFFF", fontWeight: "700" },
+
+  // Activity
+  activityList: { gap: 0 },
+  activityRow: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F6F9F7",
   },
-  dateMonth: {
-    fontSize: FontSize.micro,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 1,
-    marginBottom: 1,
+  activityMeta:   { flex: 1 },
+  activityName:   { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700" },
+  activitySub:    { fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  activityAmount: { fontFamily: FontFamily.heading, fontSize: 14, fontWeight: "700" },
+
+  // Badge
+  badge:     { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeText: { fontFamily: FontFamily.heading, fontSize: 11, fontWeight: "700" },
+
+  // Collect button
+  collectBtn: {
+    backgroundColor: Colors.primary, borderRadius: Radius.button,
+    height: 52, flexDirection: "row", alignItems: "center",
+    justifyContent: "center", gap: 8,
   },
-  dateDay: {
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    lineHeight: 24,
+  collectBtnText: { fontFamily: FontFamily.heading, fontSize: 15, color: "#FFFFFF", fontWeight: "700" },
+
+  // New Chama card
+  newChamaCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: "#E8F7F4", borderRadius: 12, borderWidth: 1,
+    borderColor: "#A8D8CF", padding: 14,
   },
-  upcomingMeta: {
-    flex: 1,
+  newChamaIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center",
   },
-  upcomingTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    marginBottom: Spacing[1],
-  },
-  upcomingDesc: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    lineHeight: 18,
-  },
-  upcomingHighlight: {
-    color: Colors.success,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  chevron: {
-    color: Colors.textMuted,
-    fontSize: FontSize["5xl"],
-    lineHeight: 28,
-    paddingLeft: Spacing[1.5],
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-  },
+  newChamaTitle: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.primary, fontWeight: "700" },
+  newChamaSub:   { fontFamily: FontFamily.regular,  fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+
+  // Avatar (not used in this screen but exported for other screens)
+  avatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontFamily: FontFamily.heading, fontSize: 14, color: "#FFFFFF", fontWeight: "700" },
 });

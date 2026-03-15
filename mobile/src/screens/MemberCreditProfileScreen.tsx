@@ -1,515 +1,149 @@
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  Pressable,
+  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  TouchableOpacity, Pressable,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import {
-  Colors,
-  FontFamily,
-  FontSize,
-  FontWeight,
-  Radius,
-  Shadow,
-  Spacing,
-} from "../theme";
+import { Feather } from "@expo/vector-icons";
+import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
+
+function HeroCircles() {
+  return (
+    <>
+      <View style={S.circleTopRight} />
+      <View style={S.circleBottomLeft} />
+    </>
+  );
+}
+
+const SCORE_DATA = [
+  { label: "Payment consistency", weight: "35%", score: 92,  color: Colors.primary },
+  { label: "Loan repayment",      weight: "25%", score: 100, color: Colors.primary },
+  { label: "Group tenure",        weight: "20%", score: 80,  color: Colors.primary },
+  { label: "Penalty record",      weight: "10%", score: 70,  color: "#D97706" },
+  { label: "Contribution growth", weight: "10%", score: 85,  color: Colors.primary },
+];
 
 export default function MemberCreditProfileScreen({ navigation }: any) {
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" />
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Member Profile</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>WK</Text>
-          </View>
-          <Text style={styles.name}>Wanjiru Kamau</Text>
-          <Text style={styles.joinDate}>Member since Jan 2023</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>TREASURER</Text>
-          </View>
-        </View>
-
-        {/* Global Score Card */}
-        <View style={styles.scoreContainer}>
-          <Text style={styles.scoreHeader}>Chama Credit Score</Text>
-          <View style={styles.scoreTop}>
-            <Text style={styles.scoreNumber}>742</Text>
-            <Text style={styles.scoreLimit}> / 850</Text>
+    <SafeAreaView style={S.screen}>
+      <StatusBar style="light" />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Hero */}
+        <View style={S.hero}>
+          <HeroCircles />
+          <View style={S.heroNav}>
+            <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
+              <Feather name="chevron-left" size={18} color="#fff" />
+            </Pressable>
+            <Text style={S.heroTitle}>Hazina Score</Text>
+            <View style={{ width: 28 }} />
           </View>
 
-          <View style={styles.gradientBarWrapper}>
-            <View style={styles.gradientBar}>
-              <View
-                style={[styles.barSegment, { backgroundColor: "#DC2626" }]}
-              />
-              <View
-                style={[styles.barSegment, { backgroundColor: "#D97706" }]}
-              />
-              <View
-                style={[styles.barSegment, { backgroundColor: "#059669" }]}
-              />
-              <View
-                style={[styles.barSegment, { backgroundColor: "#006D5B" }]}
-              />
+          {/* Big score number */}
+          <Text style={S.scoreNumber}>742</Text>
+          <Text style={S.scoreRating}>Good · 22 months tracked</Text>
+
+          {/* Range bar */}
+          <View style={S.rangeWrap}>
+            <View style={S.rangeTrack}>
+              <View style={[S.rangeFill, { width: "75%" }]} />
+              <View style={[S.rangeThumb, { left: "75%", marginLeft: -8 }]} />
             </View>
-            <View style={[styles.marker, { left: "87%" }]} />
-          </View>
-
-          <View style={styles.scoreStatusRow}>
-            <Text style={styles.scoreStatus}>Good standing</Text>
-            <Text style={styles.scoreUpdate}>UPDATED 2H AGO</Text>
+            <View style={S.rangeLabels}>
+              <Text style={S.rangeLabelStart}>300</Text>
+              <Text style={S.rangeLabelMid}>Poor</Text>
+              <Text style={S.rangeLabelMid}>Fair</Text>
+              <Text style={S.rangeLabelMid}>Good</Text>
+              <Text style={S.rangeLabelEnd}>850</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        {/* Body */}
+        <View style={S.body}>
+          <Text style={S.sectionTitle}>Score breakdown</Text>
 
-        {/* Factors section */}
-        <Text style={styles.sectionTitle}>Credit Factors</Text>
-
-        <View style={styles.factorsList}>
-          {/* Factor 1 */}
-          <View style={styles.factorItem}>
-            <View style={styles.factorHeader}>
-              <Text style={styles.factorName}>Payment consistency</Text>
-              <View style={styles.factorScoreBox}>
-                <Text style={styles.factorScoreMain}>92/100</Text>
-                <Text style={styles.factorWeight}> 35%</Text>
+          {SCORE_DATA.map((row, i) => (
+            <View key={i} style={S.scoreRow}>
+              <View style={S.scoreRowTop}>
+                <Text style={S.scoreLabel}>{row.label}</Text>
+                <Text style={S.scoreWeight}>{row.weight}</Text>
+                <Text style={[S.scoreVal, { color: row.color }]}>{row.score}</Text>
+              </View>
+              <View style={S.barTrack}>
+                <View style={[S.barFill, { width: `${row.score}%` as any, backgroundColor: row.color }]} />
               </View>
             </View>
-            <View style={styles.factorBarBg}>
-              <View style={[styles.factorBarFill, { width: "92%" }]} />
-            </View>
+          ))}
+
+          {/* Loan offer */}
+          <View style={S.loanCard}>
+            <Text style={S.loanCardTop}>BANK LOAN UNLOCKED</Text>
+            <Text style={S.loanCardTitle}>Co-operative Bank</Text>
+            <Text style={S.loanAmount}>Ksh 50,000</Text>
+            <Text style={S.loanTerms}>16% p.a. · Up to 12 months</Text>
+            <TouchableOpacity
+              style={S.applyBtn}
+              onPress={() => navigation.navigate("BankLoanOffer")}
+              activeOpacity={0.85}
+            >
+              <Text style={S.applyBtnText}>Apply now — no branch visit</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Factor 2 */}
-          <View style={styles.factorItem}>
-            <View style={styles.factorHeader}>
-              <Text style={styles.factorName}>Loan repayment history</Text>
-              <View style={styles.factorScoreBox}>
-                <Text style={styles.factorScoreMain}>100/100</Text>
-                <Text style={styles.factorWeight}> 25%</Text>
-              </View>
-            </View>
-            <View style={styles.factorBarBg}>
-              <View style={[styles.factorBarFill, { width: "100%" }]} />
-            </View>
-          </View>
-
-          {/* Factor 3 */}
-          <View style={styles.factorItem}>
-            <View style={styles.factorHeader}>
-              <Text style={styles.factorName}>Tenure in group</Text>
-              <View style={styles.factorScoreBox}>
-                <Text style={styles.factorScoreMain}>80/100</Text>
-                <Text style={styles.factorWeight}> 20%</Text>
-              </View>
-            </View>
-            <View style={styles.factorBarBg}>
-              <View style={[styles.factorBarFill, { width: "80%" }]} />
-            </View>
-          </View>
-
-          {/* Factor 4 */}
-          <View style={styles.factorItem}>
-            <View style={styles.factorHeader}>
-              <Text style={styles.factorName}>Contribution growth</Text>
-              <View style={styles.factorScoreBox}>
-                <Text style={styles.factorScoreMain}>85/100</Text>
-                <Text style={styles.factorWeight}> 10%</Text>
-              </View>
-            </View>
-            <View style={styles.factorBarBg}>
-              <View style={[styles.factorBarFill, { width: "85%" }]} />
-            </View>
-          </View>
-
-          {/* Factor 5 */}
-          <View style={styles.factorItem}>
-            <View style={styles.factorHeader}>
-              <Text style={styles.factorName}>Penalty record</Text>
-              <View style={styles.factorScoreBox}>
-                <Text style={styles.factorScoreMain}>70/100</Text>
-                <Text style={styles.factorWeight}> 10%</Text>
-              </View>
-            </View>
-            <View style={styles.factorBarBg}>
-              <View
-                style={[
-                  styles.factorBarFill,
-                  { width: "70%", backgroundColor: "#D97706" },
-                ]}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.streakSection}>
-          <Text style={styles.sectionTitle}>Contribution Streak</Text>
-          <View style={styles.dotsRow}>
-            {Array.from({ length: 24 }).map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.streakDot,
-                  i === 20 ? styles.streakLate : styles.streakOnTime,
-                ]}
-              />
-            ))}
-          </View>
-          <Text style={styles.streakDesc}>
-            22 consecutive months paid on time
-          </Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.loanHistoryHeader}>
-          <Text style={styles.sectionTitle}>Loan History</Text>
-        </View>
-
-        <View style={styles.loanHistoryList}>
-          <View style={styles.loanItem}>
-            <View style={styles.loanIconBox}>
-              <Text style={styles.loanIcon}>✓</Text>
-            </View>
-            <View style={styles.loanItemContent}>
-              <Text style={styles.loanItemTitle}>Ksh 20,000</Text>
-              <Text style={styles.loanItemDesc}>Repaid in full · 3 months</Text>
-            </View>
-            <Text style={styles.loanItemDate}>MAR 2024</Text>
-          </View>
-
-          <View style={styles.loanItem}>
-            <View style={styles.loanIconBox}>
-              <Text style={styles.loanIcon}>✓</Text>
-            </View>
-            <View style={styles.loanItemContent}>
-              <Text style={styles.loanItemTitle}>Ksh 8,000</Text>
-              <Text style={styles.loanItemDesc}>Repaid in full · 2 months</Text>
-            </View>
-            <Text style={styles.loanItemDate}>AUG 2023</Text>
-          </View>
-        </View>
-
-        {/* Banner */}
-        <View style={styles.offerBanner}>
-          <Text style={styles.offerBannerTitle}>✓ Bank Loan Eligibility</Text>
-          <Text style={styles.offerBannerText}>
-            Wanjiru qualifies for a bank loan — up to Ksh 80,000
-          </Text>
-          <Pressable
-            style={styles.offerBtn}
-            onPress={() =>
-              navigation.navigate("LoanEligibility", { maxAmount: 80000 })
-            }
-          >
-            <Text style={styles.offerBtnText}>Check my loan eligibility →</Text>
-          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.surface },
-  header: {
-    padding: Spacing[5],
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  backBtn: { paddingVertical: Spacing[2] },
-  backText: {
-    color: Colors.primary,
-    fontSize: FontSize["4xl"],
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-  },
-  headerTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  placeholder: { width: 30 },
+const S = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: Colors.primary },
+  circleTopRight: { position: "absolute", width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.05)", top: -50, right: -50 },
+  circleBottomLeft: { position: "absolute", width: 160, height: 160, borderRadius: 80, backgroundColor: "rgba(245,158,11,0.10)", bottom: -50, left: -40 },
 
-  content: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[8],
-    paddingBottom: Spacing[10],
-  },
-  profileHeader: { alignItems: "center", marginBottom: Spacing[8] },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[3],
-  },
-  avatarText: {
-    color: Colors.textInverse,
-    fontSize: FontSize["5xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  name: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["4xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[1],
-  },
-  joinDate: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.medium,
-    fontWeight: FontWeight.medium,
-    marginBottom: Spacing[2],
-  },
-  roleBadge: {
-    backgroundColor: Colors.successBg,
-    paddingHorizontal: Spacing[2.5],
-    paddingVertical: Spacing[1],
-    borderRadius: Radius.md,
-  },
-  roleBadgeText: {
-    color: Colors.primary,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 1,
-  },
+  hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 30, overflow: "hidden", alignItems: "center" },
+  heroNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", alignSelf: "stretch", marginBottom: 12 },
+  backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 18, color: "#FFFFFF", fontWeight: "800" },
 
-  scoreContainer: { marginBottom: Spacing[8] },
-  scoreHeader: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    marginBottom: Spacing[2],
-  },
-  scoreTop: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    marginBottom: Spacing[4],
-  },
-  scoreNumber: {
-    color: Colors.textPrimary,
-    fontSize: 48,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    lineHeight: 56,
-  },
-  scoreLimit: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-    marginLeft: Spacing[1],
-  },
+  scoreNumber: { fontFamily: FontFamily.extraBold, fontSize: 72, color: "#FFFFFF", fontWeight: "800", letterSpacing: -2, lineHeight: 80 },
+  scoreRating: { fontFamily: FontFamily.regular, fontSize: 14, color: "rgba(255,255,255,0.7)", marginBottom: 16 },
 
-  gradientBarWrapper: {
-    position: "relative",
-    height: 16,
-    justifyContent: "center",
-    marginBottom: Spacing[2],
+  rangeWrap: { alignSelf: "stretch" },
+  rangeTrack: { height: 8, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 4, overflow: "visible", position: "relative" },
+  rangeFill: {
+    position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 4,
+    backgroundColor: "#FFFFFF",
   },
-  gradientBar: {
-    flexDirection: "row",
-    height: 8,
-    borderRadius: Radius.xs,
-    overflow: "hidden",
+  rangeThumb: {
+    position: "absolute", top: -5, width: 18, height: 18,
+    borderRadius: 9, backgroundColor: "#FFFFFF", borderWidth: 2.5, borderColor: Colors.primary,
   },
-  barSegment: { flex: 1 },
-  marker: {
-    position: "absolute",
-    top: 0,
-    width: 4,
-    height: 16,
-    backgroundColor: Colors.textPrimary,
-    borderRadius: Radius.xs,
-  },
+  rangeLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
+  rangeLabelStart: { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
+  rangeLabelMid:   { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
+  rangeLabelEnd:   { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
 
-  scoreStatusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  scoreStatus: {
-    color: Colors.success,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  scoreUpdate: {
-    color: Colors.textMuted,
-    fontSize: FontSize.micro,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.5,
-  },
+  body: { backgroundColor: "#FFFFFF", padding: 20, paddingBottom: 100 },
+  sectionTitle: { fontFamily: FontFamily.heading, fontSize: 16, color: Colors.textPrimary, fontWeight: "700", marginBottom: 16 },
 
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginVertical: Spacing[8],
-  },
+  scoreRow: { marginBottom: 16 },
+  scoreRowTop: { flexDirection: "row", alignItems: "center", marginBottom: 5 },
+  scoreLabel:  { flex: 1, fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textPrimary },
+  scoreWeight: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.textMuted, marginRight: 8 },
+  scoreVal:    { fontFamily: FontFamily.heading, fontSize: 14, fontWeight: "700", minWidth: 28, textAlign: "right" },
+  barTrack: { height: 6, backgroundColor: "#EBF1EF", borderRadius: 3, overflow: "hidden" },
+  barFill:  { height: 6, borderRadius: 3 },
 
-  sectionTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[5],
+  loanCard: {
+    backgroundColor: "#E8F7F4", borderRadius: 14, borderWidth: 1,
+    borderColor: "#A8D8CF", padding: 16, marginTop: 8,
   },
-  factorsList: { gap: Spacing[5] },
-  factorItem: {},
-  factorHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing[2],
-  },
-  factorName: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-  factorScoreBox: { flexDirection: "row", alignItems: "baseline" },
-  factorScoreMain: {
-    color: Colors.textPrimary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  factorWeight: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xxs,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  factorBarBg: {
-    height: 6,
-    backgroundColor: Colors.divider,
-    borderRadius: Radius.full,
-  },
-  factorBarFill: {
-    height: 6,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.full,
-  },
-
-  streakSection: {},
-  dotsRow: {
-    flexDirection: "row",
-    gap: Spacing[1.5],
-    flexWrap: "wrap",
-    marginBottom: Spacing[3],
-  },
-  streakDot: { width: 12, height: 12, borderRadius: Radius.full },
-  streakOnTime: { backgroundColor: Colors.primary },
-  streakLate: { backgroundColor: Colors.accent },
-  streakDesc: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xxs,
-    fontStyle: "italic",
-  },
-
-  loanHistoryHeader: { marginBottom: Spacing[4] },
-  loanHistoryList: { gap: Spacing[4], marginBottom: Spacing[10] },
-  loanItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.background,
-    padding: Spacing[4],
-    borderRadius: Radius.lg,
-  },
-  loanIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.successLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing[4],
-  },
-  loanIcon: {
-    color: Colors.success,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  loanItemContent: { flex: 1 },
-  loanItemTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: 2,
-  },
-  loanItemDesc: { color: Colors.textSecondary, fontSize: FontSize.sm },
-  loanItemDate: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.5,
-  },
-
-  offerBanner: {
-    backgroundColor: Colors.primary,
-    padding: Spacing[6],
-    borderRadius: Radius.card,
-  },
-  offerBannerTitle: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xxs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    textTransform: "uppercase",
-    marginBottom: Spacing[2],
-    letterSpacing: 0.5,
-  },
-  offerBannerText: {
-    color: Colors.textInverse,
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    lineHeight: 24,
-    marginBottom: Spacing[5],
-  },
-  offerBtn: {
-    backgroundColor: Colors.surface,
-    paddingVertical: 14,
-    borderRadius: Radius.input,
-    alignItems: "center",
-  },
-  offerBtnText: {
-    color: Colors.primary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
+  loanCardTop:   { fontFamily: FontFamily.heading, fontSize: 10, color: "#2E9E87", fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 },
+  loanCardTitle: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700", marginBottom: 2 },
+  loanAmount:    { fontFamily: FontFamily.extraBold, fontSize: 28, color: Colors.primary, fontWeight: "800", letterSpacing: -0.5 },
+  loanTerms:     { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted, marginBottom: 14 },
+  applyBtn:      { backgroundColor: Colors.primary, borderRadius: Radius.button, height: 48, alignItems: "center", justifyContent: "center" },
+  applyBtnText:  { fontFamily: FontFamily.heading, fontSize: 14, color: "#FFFFFF", fontWeight: "700" },
 });

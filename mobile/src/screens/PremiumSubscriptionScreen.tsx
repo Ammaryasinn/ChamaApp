@@ -1,714 +1,394 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  Pressable,
-  Platform,
-  Switch,
+  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  TouchableOpacity, Pressable,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
-import {
-  Colors,
-  FontFamily,
-  FontSize,
-  FontWeight,
-  Radius,
-  Shadow,
-  Spacing,
-} from "../theme";
+import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  Shared helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-const TIERS = [
-  {
-    id: "bure",
-    name: "Bure",
-    tagline: "Get started free",
-    monthlyPrice: 0,
-    badge: null,
-    badgeColor: null,
-    accentColor: Colors.textMuted,
-    features: [
-      { text: "Up to 10 members", included: true },
-      { text: "M-Pesa contribution collection", included: true },
-      { text: "Live group balance", included: true },
-      { text: "Paid / unpaid tracker", included: true },
-      { text: "Auto penalty calculator", included: true },
-      { text: "Transaction history", included: true },
-      { text: "MGR rotation tracker", included: false },
-      { text: "Internal loan system", included: false },
-      { text: "Hazina Credit Score", included: false },
-      { text: "Bank loan offers", included: false },
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    tagline: "The full system",
-    monthlyPrice: 999,
-    badge: "MOST POPULAR",
-    badgeColor: Colors.accent,
-    accentColor: Colors.primary,
-    features: [
-      { text: "Unlimited members", included: true },
-      { text: "Everything in Free", included: true },
-      { text: "MGR rotation + swap requests", included: true },
-      { text: "Internal loan voting system", included: true },
-      { text: "Hybrid chama builder", included: true },
-      { text: "Annual PDF financial report", included: true },
-      { text: "Hazina Credit Score — full history", included: true },
-      { text: "Pre-qualified bank loan offers", included: true },
-      { text: "Priority support", included: true },
-      { text: "Investment portfolio tracking", included: true },
-    ],
-  },
-  {
-    id: "taasisi",
-    name: "Taasisi",
-    tagline: "For SACCOs & institutions",
-    monthlyPrice: 9999,
-    badge: "INSTITUTION",
-    badgeColor: "#7C3AED",
-    accentColor: "#7C3AED",
-    features: [
-      { text: "Up to 20 chamas, one dashboard", included: true },
-      { text: "Everything in Premium", included: true },
-      { text: "Bulk M-Pesa across all groups", included: true },
-      { text: "Cross-chama reporting", included: true },
-      { text: "Custom branding — your logo", included: true },
-      { text: "Direct bank API integration", included: true },
-      { text: "Group loan product", included: true },
-      { text: "Dedicated account manager", included: true },
-      { text: "SLA-backed uptime guarantee", included: true },
-      { text: "Annual audit-ready export", included: true },
-    ],
-  },
-];
-
-// ─── Feature row ──────────────────────────────────────────────────────────────
-
-function FeatureRow({
-  text,
-  included,
-  accentColor,
-}: {
-  text: string;
-  included: boolean;
-  accentColor: string;
-}) {
+function HeroCircles() {
   return (
-    <View style={featureStyles.row}>
-      <View
-        style={[
-          featureStyles.iconWrap,
-          { backgroundColor: included ? `${accentColor}18` : Colors.divider },
-        ]}
-      >
-        <Feather
-          name={included ? "check" : "minus"}
-          size={11}
-          color={included ? accentColor : Colors.textMuted}
-        />
-      </View>
-      <Text style={[featureStyles.text, !included && featureStyles.textDimmed]}>
-        {text}
-      </Text>
+    <>
+      <View style={S.cTR} />
+      <View style={S.cBL} />
+    </>
+  );
+}
+
+function CheckRow({ text, amber }: { text: string; amber?: boolean }) {
+  return (
+    <View style={S.featureRow}>
+      <Feather name="check" size={14} color={amber ? "#F59E0B" : "#059669"} />
+      <Text style={[S.featureText, amber && S.featureTextAmber]}>{text}</Text>
     </View>
   );
 }
 
-const featureStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[2.5],
-    paddingVertical: 5,
-  },
-  iconWrap: {
-    width: 20,
-    height: 20,
-    borderRadius: Radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  text: {
-    flex: 1,
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    lineHeight: 20,
-  },
-  textDimmed: {
-    color: Colors.textMuted,
-    textDecorationLine: "line-through",
-    opacity: 0.5,
-  },
-});
-
-// ─── Tier card ────────────────────────────────────────────────────────────────
-
-function TierCard({
-  tier,
-  annual,
-  selected,
-  onSelect,
-}: {
-  tier: (typeof TIERS)[number];
-  annual: boolean;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const price = annual
-    ? Math.round(tier.monthlyPrice * 0.75)
-    : tier.monthlyPrice;
-  const isFree = tier.monthlyPrice === 0;
-  const saving =
-    annual && !isFree
-      ? `Save ${Math.round(tier.monthlyPrice * 0.25 * 12).toLocaleString()}/yr`
-      : null;
-
+function CrossRow({ text }: { text: string }) {
   return (
-    <Pressable
-      onPress={onSelect}
-      style={[
-        styles.tierCard,
-        selected && { borderColor: tier.accentColor, borderWidth: 2 },
-      ]}
-    >
-      {/* Tier header */}
-      <View style={styles.tierHeader}>
-        <View style={styles.tierNameRow}>
-          <Text style={styles.tierName}>{tier.name}</Text>
-          {tier.badge && (
-            <View
-              style={[
-                styles.tierBadge,
-                { backgroundColor: `${tier.badgeColor}22` },
-              ]}
-            >
-              <Text style={[styles.tierBadgeText, { color: tier.badgeColor! }]}>
-                {tier.badge}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Text style={styles.tierTagline}>{tier.tagline}</Text>
-      </View>
-
-      {/* Price */}
-      <View style={styles.priceBlock}>
-        {isFree ? (
-          <Text style={styles.priceMain}>Free forever</Text>
-        ) : (
-          <View style={styles.priceRow}>
-            <Text style={styles.priceCurrency}>KES </Text>
-            <Text style={styles.priceAmount}>{price.toLocaleString()}</Text>
-            <Text style={styles.pricePeriod}>/mo</Text>
-          </View>
-        )}
-        {saving && (
-          <View style={styles.savingPill}>
-            <Text style={styles.savingText}>{saving}</Text>
-          </View>
-        )}
-        {annual && !isFree && (
-          <Text style={styles.billedNote}>
-            Billed KES {(price * 12).toLocaleString()} annually
-          </Text>
-        )}
-      </View>
-
-      {/* Divider */}
-      <View style={styles.tierDivider} />
-
-      {/* Features */}
-      <View style={styles.featureList}>
-        {tier.features.map((f, i) => (
-          <FeatureRow
-            key={i}
-            text={f.text}
-            included={f.included}
-            accentColor={tier.accentColor}
-          />
-        ))}
-      </View>
-
-      {/* CTA */}
-      <Pressable
-        style={[
-          styles.tierCta,
-          isFree && styles.tierCtaOutline,
-          { borderColor: tier.accentColor },
-          !isFree && { backgroundColor: tier.accentColor },
-        ]}
-      >
-        <Text
-          style={[
-            styles.tierCtaText,
-            isFree
-              ? { color: tier.accentColor }
-              : { color: Colors.textInverse },
-          ]}
-        >
-          {isFree ? "Current plan" : `Get ${tier.name}`}
-        </Text>
-        {!isFree && (
-          <Feather name="arrow-right" size={16} color={Colors.textInverse} />
-        )}
-      </Pressable>
-    </Pressable>
+    <View style={S.featureRow}>
+      <Feather name="x" size={14} color="#C8D8D4" />
+      <Text style={[S.featureText, S.featureTextMuted]}>{text}</Text>
+    </View>
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  Compact horizontal slider
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Slider({
+  value, min, max, step = 1,
+  onChange, label, unit,
+}: {
+  value: number; min: number; max: number; step?: number;
+  onChange: (v: number) => void; label: string; unit: string;
+}) {
+  return (
+    <View style={S.sliderWrap}>
+      <Text style={S.sliderCaption}>{label}</Text>
+      <View style={S.sliderRow}>
+        <Pressable style={S.stepBtn} onPress={() => onChange(Math.max(min, value - step))}>
+          <Text style={S.stepBtnText}>−</Text>
+        </Pressable>
+        <View style={S.trackContainer}>
+          <View style={S.trackBg} />
+          <View style={[S.trackFill, { width: `${((value - min) / (max - min)) * 100}%` as any }]} />
+          <View style={[S.trackThumb, { left: `${((value - min) / (max - min)) * 100}%` as any, marginLeft: -10 }]} />
+        </View>
+        <Text style={S.sliderValue}>{value}</Text>
+        <Text style={S.sliderUnit}>{unit}</Text>
+        <Pressable style={S.stepBtn} onPress={() => onChange(Math.min(max, value + step))}>
+          <Text style={S.stepBtnText}>+</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Screen
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PremiumSubscriptionScreen({ navigation }: any) {
-  const [annual, setAnnual] = useState(false);
-  const [selectedTier, setSelectedTier] = useState("premium");
+  const [members, setMembers] = useState(20);
+  const [chamas,  setChamas]  = useState(8);
+
+  // Premium: Ksh 999/chama ÷ members
+  const perMember = members > 0 ? Math.round(999 / members) : 0;
+
+  // Taasisi: base 9,999 covers 5 chamas; each extra = 1,500
+  const BASE_PRICE  = 9999;
+  const EXTRA_PRICE = 1500;
+  const BASE_COVERS = 5;
+  const extraChamas = Math.max(0, chamas - BASE_COVERS);
+  const extraCost   = extraChamas * EXTRA_PRICE;
+  const taasisiTotal = BASE_PRICE + extraCost;
+
+  // Savings vs buying individual Premium licenses
+  const vsMultiple = 999 * chamas;
+  const saving = Math.max(0, vsMultiple - taasisiTotal);
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={S.screen}>
       <StatusBar style="light" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* ── Dark hero header ── */}
-        <LinearGradient
-          colors={[Colors.surfaceDeepDark, Colors.surfaceDark, "#0D2E22"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          {/* Back button */}
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backBtn}
-            hitSlop={12}
-          >
-            <Feather
-              name="arrow-left"
-              size={20}
-              color={Colors.textInverseSoft}
-            />
+      {/* ── Hero header ───────────────────────────────────── */}
+      <View style={S.hero}>
+        <HeroCircles />
+        <View style={S.heroNav}>
+          <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
+            <Feather name="chevron-left" size={18} color="#fff" />
           </Pressable>
+          <Text style={S.heroNavTitle}>Upgrade Hazina</Text>
+        </View>
+        <Text style={S.heroTitle}>Choose your plan</Text>
+        <Text style={S.heroSub}>Start free · Upgrade when your chama is ready</Text>
+      </View>
 
-          {/* Icon */}
-          <View style={styles.heroIconWrap}>
-            <Feather name="star" size={28} color={Colors.accent} />
+      <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ════════════════════════════════════════════════
+            FREE TIER
+          ════════════════════════════════════════════════ */}
+        <View style={S.card}>
+          {/* Header */}
+          <View style={S.cardHeaderFree}>
+            <View style={S.badgeFree}><Text style={S.badgeFreeText}>Free — Bure</Text></View>
+            <Text style={S.planName}>Free forever</Text>
+            <View style={S.priceRow}>
+              <Text style={S.priceCurrency}>Ksh</Text>
+              <Text style={S.priceAmount}>0</Text>
+              <Text style={S.pricePer}>/month</Text>
+            </View>
+            <Text style={S.planCaption}>Up to 15 members · No card needed</Text>
           </View>
 
-          <Text style={styles.heroOverline}>HAZINA PLANS</Text>
-          <Text style={styles.heroTitle}>Upgrade your{"\n"}chama's power</Text>
-          <Text style={styles.heroSubtitle}>
-            From free tracking to full financial infrastructure — choose the
-            plan that fits your group.
-          </Text>
+          {/* Features */}
+          <View style={S.featureList}>
+            <CheckRow text="M-Pesa contribution collection" />
+            <CheckRow text="Live group balance dashboard" />
+            <CheckRow text="Auto penalty calculator" />
+            <CheckRow text="Basic Hazina Score (view only)" />
+            <CrossRow text="MGR rotation scheduler" />
+            <CrossRow text="Bank loan access" />
+          </View>
 
-          {/* Annual / monthly toggle */}
-          <View style={styles.toggleRow}>
-            <Text
-              style={[styles.toggleLabel, !annual && styles.toggleLabelActive]}
-            >
-              Monthly
+          <TouchableOpacity style={S.currentPlanBtn}>
+            <Text style={S.currentPlanBtnText}>Current plan</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ════════════════════════════════════════════════
+            PREMIUM TIER
+          ════════════════════════════════════════════════ */}
+        <View style={[S.card, S.cardFeatured]}>
+          {/* Header — SOLID #006D5B */}
+          <View style={S.cardHeaderGreen}>
+            <View style={S.badgePremium}><Text style={S.badgePremiumText}>Premium — Bila kikomo</Text></View>
+            <Text style={[S.planName, S.planNameWhite]}>Premium</Text>
+            <View style={S.priceRow}>
+              <Text style={[S.priceCurrency, S.priceWhite]}>Ksh</Text>
+              <Text style={[S.priceAmount, S.priceWhite]}>999</Text>
+              <Text style={[S.pricePer, S.priceWhiteLight]}>/month</Text>
+            </View>
+            <Text style={S.planCaptionWhite}>
+              Ksh {perMember} per member for {members} members
             </Text>
-            <Switch
-              value={annual}
-              onValueChange={setAnnual}
-              trackColor={{ false: Colors.borderStrong, true: Colors.primary }}
-              thumbColor={Colors.surface}
-              style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+          </View>
+
+          {/* Slider row — own section with top border */}
+          <View style={S.sliderSection}>
+            <Slider
+              label="Your chama size:"
+              value={members} min={2} max={50}
+              onChange={setMembers}
+              unit="members"
             />
-            <Text
-              style={[styles.toggleLabel, annual && styles.toggleLabelActive]}
-            >
-              Annual
+          </View>
+
+          {/* Features */}
+          <View style={S.featureList}>
+            <CheckRow text="Everything in Free" />
+            <CheckRow text="Unlimited members" />
+            <CheckRow text="MGR rotation + swap requests" />
+            <CheckRow text="Internal loan voting system" />
+            <CheckRow text="Annual PDF financial report" />
+            <CheckRow text="Full Hazina Score + history" amber />
+            <CheckRow text="Bank loan offers unlocked" amber />
+          </View>
+
+          <TouchableOpacity style={S.upgradePrimaryBtn} activeOpacity={0.85}>
+            <Text style={S.upgradePrimaryText}>Upgrade to Premium</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ════════════════════════════════════════════════
+            INSTITUTION / TAASISI TIER
+          ════════════════════════════════════════════════ */}
+        <View style={[S.card, S.cardFeatured]}>
+          {/* Header — SOLID #006D5B */}
+          <View style={S.cardHeaderGreen}>
+            <View style={S.badgeTaasisi}><Text style={S.badgeTaasisiText}>Institution — Taasisi</Text></View>
+            <Text style={[S.planName, S.planNameWhite]}>Institution</Text>
+            <View style={S.priceRow}>
+              <Text style={[S.priceCurrency, S.priceWhite]}>Ksh</Text>
+              <Text style={[S.priceAmount, S.priceAmountLarge, S.priceWhite]}>9,999</Text>
+              <Text style={[S.pricePer, S.priceWhiteLight]}>/month</Text>
+            </View>
+            <Text style={S.planCaptionWhite}>
+              Covers {BASE_COVERS} chamas · Ksh {EXTRA_PRICE.toLocaleString()} per extra
             </Text>
-            {annual && (
-              <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>Save 25%</Text>
+          </View>
+
+          {/* Calculator row */}
+          <View style={S.sliderSection}>
+            <Slider
+              label="How many chamas are you managing?"
+              value={chamas} min={1} max={25}
+              onChange={setChamas}
+              unit="chamas"
+            />
+
+            {/* 3-row breakdown: base · extra · divider · total */}
+            <View style={S.breakdown}>
+              <View style={S.breakdownRow}>
+                <Text style={S.breakdownLabel}>Base plan ({BASE_COVERS} chamas)</Text>
+                <Text style={S.breakdownVal}>Ksh {BASE_PRICE.toLocaleString()}</Text>
+              </View>
+
+              <View style={S.breakdownRow}>
+                <Text style={S.breakdownLabel}>
+                  Extra chamas ({extraChamas > 0 ? `+${extraChamas} × Ksh ${EXTRA_PRICE.toLocaleString()}` : "none"})
+                </Text>
+                <Text style={S.breakdownVal}>
+                  {extraCost > 0 ? `Ksh ${extraCost.toLocaleString()}` : "—"}
+                </Text>
+              </View>
+
+              <View style={S.breakdownDivider} />
+
+              <View style={S.breakdownRow}>
+                <Text style={S.breakdownTotalLabel}>Total per month</Text>
+                <View style={S.breakdownTotalRight}>
+                  <Text style={S.breakdownTotalCurrency}>Ksh</Text>
+                  <Text style={S.breakdownTotalAmt}>{taasisiTotal.toLocaleString()}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Savings pill — green tint (good news!) */}
+            {saving > 0 && (
+              <View style={S.savingPill}>
+                <Feather name="trending-down" size={13} color="#059669" />
+                <Text style={S.savingPillText}>
+                  Save Ksh {saving.toLocaleString()} vs buying Premium for each chama
+                </Text>
               </View>
             )}
           </View>
-        </LinearGradient>
 
-        {/* ── Tier cards ── */}
-        <View style={styles.tiersSection}>
-          {TIERS.map((tier) => (
-            <TierCard
-              key={tier.id}
-              tier={tier}
-              annual={annual}
-              selected={selectedTier === tier.id}
-              onSelect={() => setSelectedTier(tier.id)}
-            />
-          ))}
+          {/* Features */}
+          <View style={S.featureList}>
+            <CheckRow text="Everything in Premium — all chamas" />
+            <CheckRow text="One dashboard for all chamas" />
+            <CheckRow text="Bulk M-Pesa across all groups" />
+            <CheckRow text="Custom branding — your logo" />
+            <CheckRow text="Dedicated account manager" />
+            <CheckRow text="Direct bank API integration" amber />
+            <CheckRow text="Group loan product from bank" amber />
+          </View>
+
+          <TouchableOpacity style={S.upgradePrimaryBtn} activeOpacity={0.85}>
+            <Text style={S.upgradePrimaryText}>Get started with Taasisi</Text>
+          </TouchableOpacity>
+          <Text style={S.taasisiNote}>No setup fee · First month free · Cancel anytime</Text>
         </View>
-
-        {/* ── Trust signals ── */}
-        <View style={styles.trustRow}>
-          <TrustItem icon="shield" text="Secure M-Pesa payments" />
-          <TrustItem icon="refresh-cw" text="Cancel anytime" />
-          <TrustItem icon="lock" text="Bank-grade security" />
-        </View>
-
-        {/* ── FAQ ── */}
-        <View style={styles.faqSection}>
-          <Text style={styles.faqTitle}>Common questions</Text>
-
-          <FaqItem
-            q="Can I switch plans later?"
-            a="Yes. Upgrade or downgrade at any time from your profile settings. Changes take effect on your next billing date."
-          />
-          <FaqItem
-            q="How is Premium billed?"
-            a="Monthly or annually — paid via M-Pesa Paybill. Annual billing saves you 25% and unlocks a priority onboarding call."
-          />
-          <FaqItem
-            q="What happens if I downgrade?"
-            a="Your data is never deleted. Features are locked until you re-upgrade, but your history and contributions remain intact."
-          />
-          <FaqItem
-            q="Does Taasisi support SACCOs?"
-            a="Yes. Taasisi is built for organisations running multiple chamas — SACCOs, churches, estate managers, and co-operatives."
-          />
-        </View>
-
-        <View style={{ height: Spacing[12] }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── Trust item ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  Styles
+// ─────────────────────────────────────────────────────────────────────────────
 
-function TrustItem({ icon, text }: { icon: string; text: string }) {
-  return (
-    <View style={trustStyles.item}>
-      <Feather name={icon as any} size={16} color={Colors.primary} />
-      <Text style={trustStyles.text}>{text}</Text>
-    </View>
-  );
-}
-
-const trustStyles = StyleSheet.create({
-  item: {
-    alignItems: "center",
-    gap: Spacing[1.5],
-    flex: 1,
-  },
-  text: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.medium,
-    fontWeight: FontWeight.medium,
-    textAlign: "center",
-    lineHeight: 16,
-  },
-});
-
-// ─── FAQ item ─────────────────────────────────────────────────────────────────
-
-function FaqItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Pressable style={faqStyles.item} onPress={() => setOpen(!open)}>
-      <View style={faqStyles.qRow}>
-        <Text style={faqStyles.question}>{q}</Text>
-        <Feather
-          name={open ? "chevron-up" : "chevron-down"}
-          size={16}
-          color={Colors.textMuted}
-        />
-      </View>
-      {open && <Text style={faqStyles.answer}>{a}</Text>}
-    </Pressable>
-  );
-}
-
-const faqStyles = StyleSheet.create({
-  item: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-    paddingVertical: Spacing[4],
-  },
-  qRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: Spacing[3],
-  },
-  question: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    lineHeight: 22,
-  },
-  answer: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    lineHeight: 20,
-    marginTop: Spacing[2],
-  },
-});
-
-// ─── Main styles ──────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { flexGrow: 1 },
+const S = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: Colors.primary },
 
   // Hero
-  hero: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[2],
-    paddingBottom: Spacing[9],
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[6],
-  },
-  heroIconWrap: {
-    width: 58,
-    height: 58,
-    borderRadius: Radius.cardLg,
-    backgroundColor: "rgba(245,158,11,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(245,158,11,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[5],
-  },
-  heroOverline: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 2,
-    marginBottom: Spacing[2],
-  },
-  heroTitle: {
-    color: Colors.textInverse,
-    fontSize: FontSize["6xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    lineHeight: 40,
-    letterSpacing: -0.5,
-    marginBottom: Spacing[3],
-  },
-  heroSubtitle: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    lineHeight: 22,
-    opacity: 0.85,
-    marginBottom: Spacing[7],
-  },
+  cTR: { position: "absolute", width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.05)", top: -50, right: -50 },
+  cBL: { position: "absolute", width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(245,158,11,0.10)", bottom: -40, left: -30 },
+  hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 20, overflow: "hidden", gap: 8 },
+  heroNav: { flexDirection: "row", alignItems: "center", gap: 10 },
+  backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  heroNavTitle: { fontFamily: FontFamily.medium, fontSize: 14, color: "rgba(255,255,255,0.9)" },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 26, color: "#FFFFFF", fontWeight: "800", letterSpacing: -0.5 },
+  heroSub:   { fontFamily: FontFamily.regular, fontSize: 13, color: "rgba(255,255,255,0.65)" },
 
-  // Toggle
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[2],
-  },
-  toggleLabel: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-    opacity: 0.6,
-  },
-  toggleLabelActive: {
-    color: Colors.textInverse,
-    opacity: 1,
-  },
-  saveBadge: {
-    backgroundColor: `${Colors.accent}22`,
-    borderWidth: 1,
-    borderColor: `${Colors.accent}44`,
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  saveBadgeText: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
+  // Scroll
+  scroll: { backgroundColor: "#F6F9F7", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100, gap: 16 },
 
-  // Tiers
-  tiersSection: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[6],
-    gap: Spacing[4],
-  },
-  tierCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.cardLg,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    padding: Spacing[5],
-    ...Shadow.md,
-  },
-  tierHeader: {
-    marginBottom: Spacing[4],
-  },
-  tierNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[2],
-    marginBottom: Spacing[1],
-  },
-  tierName: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["2xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  tierBadge: {
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  tierBadgeText: {
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.5,
-  },
-  tierTagline: {
-    color: Colors.textMuted,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-  },
+  // Plan cards
+  card: { backgroundColor: "#FFFFFF", borderRadius: 16, borderWidth: 1, borderColor: "#EBF1EF", overflow: "hidden" },
+  cardFeatured: { borderWidth: 2, borderColor: Colors.primary },
 
-  // Price
-  priceBlock: {
-    marginBottom: Spacing[4],
+  // Card headers
+  cardHeaderFree: { backgroundColor: "#F6F9F7", padding: 16, gap: 4 },
+
+  // ── SOLID green header ──────────────────────────────────────────────────
+  cardHeaderGreen: { backgroundColor: Colors.primary, padding: 16, gap: 4 },
+
+  // Badges
+  badgeFree:    { alignSelf: "flex-start", backgroundColor: "#E8F7F4", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
+  badgeFreeText:{ fontFamily: FontFamily.heading, fontSize: 11, color: "#085041", fontWeight: "700" },
+  badgePremium: { alignSelf: "flex-start", backgroundColor: "#F59E0B", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
+  badgePremiumText: { fontFamily: FontFamily.heading, fontSize: 11, color: "#FFFFFF", fontWeight: "700" },
+  badgeTaasisi: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
+  badgeTaasisiText: { fontFamily: FontFamily.heading, fontSize: 11, color: "#FFFFFF", fontWeight: "700" },
+
+  // Plan title + pricing
+  planName:      { fontFamily: FontFamily.extraBold, fontSize: 22, color: Colors.textPrimary, fontWeight: "800" },
+  planNameWhite: { color: "#FFFFFF" },
+  priceRow:      { flexDirection: "row", alignItems: "baseline", gap: 2 },
+  priceCurrency: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700", marginBottom: 3 },
+  priceAmount:   { fontFamily: FontFamily.extraBold, fontSize: 38, color: Colors.textPrimary, fontWeight: "800", letterSpacing: -1, lineHeight: 44 },
+  priceAmountLarge: { fontSize: 42 },
+  pricePer:      { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.textMuted },
+  priceWhite:    { color: "#FFFFFF" },
+  priceWhiteLight:{ color: "rgba(255,255,255,0.7)" },
+  planCaption:   { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted },
+  planCaptionWhite: { fontFamily: FontFamily.heading, fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: "700", marginTop: 2 },
+
+  // Slider section — sits between header & features with a top border
+  sliderSection: {
+    borderTopWidth: 1, borderTopColor: "#EBF1EF",
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 16, paddingVertical: 14, gap: 12,
   },
-  priceMain: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
+  sliderWrap: { gap: 8 },
+  sliderCaption: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.textSecondary },
+  sliderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  stepBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#EBF1EF",
+    alignItems: "center", justifyContent: "center",
   },
-  priceRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
+  stepBtnText: { fontFamily: FontFamily.heading, fontSize: 18, color: Colors.primary, lineHeight: 22, fontWeight: "700" },
+  trackContainer: { flex: 1, height: 6, position: "relative" },
+  trackBg:     { position: "absolute", left: 0, right: 0, height: 6, backgroundColor: "#EBF1EF", borderRadius: 3 },
+  trackFill:   { position: "absolute", left: 0, height: 6, backgroundColor: Colors.primary, borderRadius: 3 },
+  trackThumb:  { position: "absolute", top: -7, width: 20, height: 20, borderRadius: 10, backgroundColor: "#FFFFFF", borderWidth: 2.5, borderColor: Colors.primary },
+  sliderValue: { fontFamily: FontFamily.extraBold, fontSize: 18, color: Colors.primary, fontWeight: "800", minWidth: 28, textAlign: "center" },
+  sliderUnit:  { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted },
+
+  // Taasisi 3-row breakdown
+  breakdown: {
+    backgroundColor: "#EDE9FE", borderRadius: 10, padding: 12, gap: 6,
   },
-  priceCurrency: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  priceAmount: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["5xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: -1,
-  },
-  pricePeriod: {
-    color: Colors.textMuted,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    marginLeft: 2,
-  },
+  breakdownRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  breakdownLabel: { fontFamily: FontFamily.regular, fontSize: 12, color: "#4C1D95", flex: 1, flexWrap: "wrap" },
+  breakdownVal:   { fontFamily: FontFamily.heading, fontSize: 12, color: "#4C1D95", fontWeight: "700" },
+  breakdownDivider: { height: 1, backgroundColor: "#C4B5FD", marginVertical: 4 },
+  breakdownTotalLabel: { fontFamily: FontFamily.heading, fontSize: 13, color: "#3C3489", fontWeight: "700", flex: 1 },
+  breakdownTotalRight: { flexDirection: "row", alignItems: "baseline", gap: 2 },
+  breakdownTotalCurrency: { fontFamily: FontFamily.heading, fontSize: 12, color: "#3C3489", fontWeight: "700" },
+  breakdownTotalAmt: { fontFamily: FontFamily.extraBold, fontSize: 22, color: "#3C3489", fontWeight: "800", letterSpacing: -0.5 },
+
+  // Savings pill — green tint (it's good news!)
   savingPill: {
-    alignSelf: "flex-start",
-    backgroundColor: Colors.successBg,
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    marginTop: Spacing[1.5],
-    marginBottom: 2,
+    flexDirection: "row", alignItems: "flex-start", gap: 8,
+    backgroundColor: "#ECFDF5", borderRadius: 8, borderWidth: 1, borderColor: "#A7F3D0",
+    paddingHorizontal: 12, paddingVertical: 8,
   },
-  savingText: {
-    color: Colors.success,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  billedNote: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    marginTop: 4,
-  },
+  savingPillText: { fontFamily: FontFamily.heading, fontSize: 12, color: "#065F46", fontWeight: "700", flex: 1, lineHeight: 17 },
 
-  // Tier body
-  tierDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginBottom: Spacing[4],
-  },
-  featureList: {
-    marginBottom: Spacing[5],
-  },
+  // Feature list
+  featureList: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  featureText: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textPrimary, flex: 1 },
+  featureTextAmber: { color: "#D97706", fontFamily: FontFamily.heading, fontWeight: "700" },
+  featureTextMuted: { color: Colors.textMuted },
 
-  // CTA
-  tierCta: {
-    borderRadius: Radius.button,
-    paddingVertical: Spacing[4],
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing[2],
+  // Buttons
+  currentPlanBtn: {
+    margin: 16, borderRadius: Radius.button, height: 48,
+    borderWidth: 1.5, borderColor: "#EBF1EF",
+    alignItems: "center", justifyContent: "center",
   },
-  tierCtaOutline: {
-    borderWidth: 1.5,
-    backgroundColor: "transparent",
-  },
-  tierCtaText: {
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    letterSpacing: 0.2,
-  },
+  currentPlanBtnText: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textSecondary, fontWeight: "700" },
 
-  // Trust
-  trustRow: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[7],
-    gap: Spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-    marginTop: Spacing[6],
+  upgradePrimaryBtn: {
+    margin: 16, backgroundColor: Colors.primary,
+    borderRadius: Radius.button, height: 52,
+    alignItems: "center", justifyContent: "center",
   },
+  upgradePrimaryText: { fontFamily: FontFamily.heading, fontSize: 15, color: "#FFFFFF", fontWeight: "700" },
 
-  // FAQ
-  faqSection: {
-    paddingHorizontal: Spacing[5],
-  },
-  faqTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["2xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[2],
-  },
+  taasisiNote: { textAlign: "center", fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, paddingBottom: 16 },
 });

@@ -1,0 +1,2 @@
+﻿src/lib/socket.ts(11,15): error TS2341: Property 'uri' is private and only accessible within class 'Manager<ListenEvents, EmitEvents>'.
+src/lib/socket.ts(11,15): error TS2540: Cannot assign to 'uri' because it is a read-only property.

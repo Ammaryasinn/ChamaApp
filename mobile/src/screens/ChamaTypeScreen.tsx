@@ -5,93 +5,36 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  TouchableOpacity,
   Pressable,
   Animated,
   Modal,
   Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import {
-  Colors,
-  FontFamily,
-  FontSize,
-  FontWeight,
-  Radius,
-  Shadow,
-  Spacing,
-} from "../theme";
+import { Feather } from "@expo/vector-icons";
+import { Colors, FontFamily, FontSize, Radius, Spacing, Shadow } from "../theme";
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Types
+//  Shared helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-type ChamaTypeId = "merry_go_round" | "investment" | "welfare" | "hybrid";
-
-interface ChamaTypeData {
-  id: ChamaTypeId;
-  title: string;
-  swahili: string;
-  description: string;
-  icon: string;
-  iconBg: string;
-  badge?: string;
-  bestFor: string;
+function HeroCircles() {
+  return (
+    <>
+      <View style={S.circleTopRight} />
+      <View style={S.circleBottomLeft} />
+    </>
+  );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Static data
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CHAMA_TYPES: ChamaTypeData[] = [
-  {
-    id: "merry_go_round",
-    title: "Merry-go-round",
-    swahili: "Mchezo",
-    description:
-      "Everyone contributes each cycle. The full pot goes to one member at a time, rotating until all have received.",
-    icon: "↺",
-    iconBg: "#FEF3C7",
-    badge: "MOST POPULAR",
-    bestFor: "Predictable lump-sum payouts",
-  },
-  {
-    id: "investment",
-    title: "Investment chama",
-    swahili: "Uwekezaji",
-    description:
-      "Contributions go into a shared fund. Group votes on stocks, land, unit trusts, or a business.",
-    icon: "📈",
-    iconBg: "#DBEAFE",
-    bestFor: "Long-term wealth building",
-  },
-  {
-    id: "welfare",
-    title: "Welfare / savings",
-    swahili: "Akiba",
-    description:
-      "Members save together and borrow from the pot at low interest. A member-owned mini bank.",
-    icon: "🤝",
-    iconBg: "#EDE9FE",
-    bestFor: "Emergency access to affordable credit",
-  },
-  {
-    id: "hybrid",
-    title: "Hybrid",
-    swahili: "Mchanganyiko",
-    description:
-      "Combine two or three types. Set your own contribution split below.",
-    icon: "⚖️",
-    iconBg: "#D1FAE5",
-    bestFor: "Maximum flexibility",
-  },
-];
-
-const TYPE_ROUTE_MAP: Record<ChamaTypeId, string> = {
-  merry_go_round: "MGRSetup",
-  investment: "InvestmentSetup",
-  welfare: "WelfareSetup",
-  hybrid: "InviteMembers",
-};
+function ProgressBar({ step, total }: { step: number; total: number }) {
+  return (
+    <View style={S.progressTrack}>
+      <View style={[S.progressFill, { width: `${(step / total) * 100}%` as any }]} />
+    </View>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Animated toggle
@@ -99,213 +42,59 @@ const TYPE_ROUTE_MAP: Record<ChamaTypeId, string> = {
 
 function AnimatedToggle({ isOn }: { isOn: boolean }) {
   const anim = useRef(new Animated.Value(isOn ? 1 : 0)).current;
-
   useEffect(() => {
-    Animated.timing(anim, {
-      toValue: isOn ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(anim, { toValue: isOn ? 1 : 0, duration: 200, useNativeDriver: false }).start();
   }, [isOn]);
-
-  const trackColor = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [Colors.borderStrong, Colors.primary],
-  });
-  const thumbTranslate = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [3, 22],
-  });
-
+  const trackColor = anim.interpolate({ inputRange: [0, 1], outputRange: ["#C8D8D4", Colors.primary] });
+  const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [2, 20] });
   return (
     <Animated.View style={[S.toggleTrack, { backgroundColor: trackColor }]}>
-      <Animated.View
-        style={[S.toggleThumb, { transform: [{ translateX: thumbTranslate }] }]}
-      />
+      <Animated.View style={[S.toggleThumb, { transform: [{ translateX }] }]} />
     </Animated.View>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MGR "What if?" nudge modal
+//  Hybrid builder — sits inside the expanded card
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface NudgeModalProps {
-  visible: boolean;
-  onKeepMGR: () => void;
-  onAddPot: () => void;
-}
-
-function NudgeModal({ visible, onKeepMGR, onAddPot }: NudgeModalProps) {
-  const slideAnim = useRef(new Animated.Value(80)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 80,
-          friction: 12,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 80,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [visible]);
+function HybridBuilder({ contribution, mgrPct, investPct, welfarePct, investEnabled, welfareEnabled, onAdjustMgr, onToggleInvest, onToggleWelfare }: any) {
+  const mgrAmt     = Math.round((contribution * mgrPct) / 100);
+  const invAmt     = Math.round((contribution * investPct) / 100);
+  const welfareAmt = contribution - mgrAmt - invAmt;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-    >
-      <Animated.View style={[S.modalOverlay, { opacity: fadeAnim }]}>
-        <Animated.View
-          style={[
-            S.nudgeSheet,
-            { transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          {/* Question mark accent */}
-          <View style={S.nudgeAccent}>
-            <Text style={S.nudgeAccentText}>?</Text>
-          </View>
-
-          <Text style={S.nudgeQuestion}>
-            What happens if Akinyi needs money urgently — before her turn in
-            month 7?
-          </Text>
-
-          <View style={S.nudgeScenarioRow}>
-            <View style={[S.nudgeScenario, S.nudgeScenarioBad]}>
-              <Text style={S.nudgeScenarioLabel}>Pure MGR</Text>
-              <Text style={S.nudgeScenarioText}>
-                She waits — or borrows outside at 30–40% interest.
-              </Text>
-            </View>
-            <View style={[S.nudgeScenario, S.nudgeScenarioGood]}>
-              <Text style={[S.nudgeScenarioLabel, { color: Colors.successDark }]}>
-                MGR + Savings pot
-              </Text>
-              <Text style={[S.nudgeScenarioText, { color: Colors.successDark }]}>
-                She borrows from the group in 48 hours at 5%.
-              </Text>
-            </View>
-          </View>
-
-          <Text style={S.nudgeHint}>
-            Adding just{" "}
-            <Text style={S.nudgeHintBold}>20% to a savings pot</Text> costs
-            each member less than an M-Pesa transaction fee per month —
-            and gives everyone a safety net.
-          </Text>
-
-          {/* CTAs */}
-          <Pressable style={S.nudgePrimaryBtn} onPress={onAddPot}>
-            <Text style={S.nudgePrimaryBtnText}>
-              Add a small savings pot →
-            </Text>
-          </Pressable>
-
-          <Pressable style={S.nudgeSecondaryBtn} onPress={onKeepMGR}>
-            <Text style={S.nudgeSecondaryBtnText}>Keep pure MGR for now</Text>
-          </Pressable>
-        </Animated.View>
-      </Animated.View>
-    </Modal>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Hybrid split builder
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface HybridBuilderProps {
-  contribution: number;
-  mgrPct: number;
-  investPct: number;
-  welfarePct: number;
-  welfareEnabled: boolean;
-  investEnabled: boolean;
-  onAdjustMgr: (delta: number) => void;
-  onToggleWelfare: () => void;
-  onToggleInvest: () => void;
-}
-
-function HybridBuilder({
-  contribution,
-  mgrPct,
-  investPct,
-  welfarePct,
-  welfareEnabled,
-  investEnabled,
-  onAdjustMgr,
-  onToggleWelfare,
-  onToggleInvest,
-}: HybridBuilderProps) {
-  const mgrAmount = Math.round((contribution * mgrPct) / 100);
-  const invAmount = Math.round((contribution * investPct) / 100);
-  const welfareAmount = contribution - mgrAmount - invAmount;
-
-  return (
-    <View style={S.hybridContainer}>
-      {/* Section header */}
+    <View style={S.hybridWrap}>
       <Text style={S.hybridTitle}>Configure your split</Text>
-      <Text style={S.hybridSub}>
-        Choose which components to include and how to split the contribution.
-      </Text>
+      <Text style={S.hybridSub}>Choose which components and how to split contributions</Text>
 
-      {/* Component toggles */}
-      <View style={S.hybridToggles}>
-        {/* MGR — always on in hybrid */}
-        <View style={S.hybridToggleRow}>
-          <View style={[S.hybridToggleIcon, { backgroundColor: "#FEF3C7" }]}>
-            <Text style={S.hybridToggleEmoji}>↺</Text>
+      {/* Toggle rows */}
+      <View style={S.toggleBlock}>
+        <View style={S.toggleRow}>
+          <View style={[S.toggleIcon, { backgroundColor: "#FEF3C7" }]}>
+            <Feather name="rotate-cw" size={16} color="#D97706" />
           </View>
-          <Text style={S.hybridToggleName}>Merry-go-round</Text>
-          <View style={S.hybridToggleOnBadge}>
-            <Text style={S.hybridToggleOnText}>Always on</Text>
-          </View>
+          <Text style={S.toggleName}>Merry-go-round</Text>
+          <View style={S.alwaysOnBadge}><Text style={S.alwaysOnText}>Always on</Text></View>
         </View>
 
-        <View style={S.hybridDivider} />
+        <View style={S.toggleDivider} />
 
-        {/* Investment */}
-        <Pressable style={S.hybridToggleRow} onPress={onToggleInvest}>
-          <View style={[S.hybridToggleIcon, { backgroundColor: "#DBEAFE" }]}>
-            <Text style={S.hybridToggleEmoji}>📈</Text>
+        <Pressable style={S.toggleRow} onPress={onToggleInvest}>
+          <View style={[S.toggleIcon, { backgroundColor: "#DBEAFE" }]}>
+            <Feather name="trending-up" size={16} color="#3B82F6" />
           </View>
-          <Text style={S.hybridToggleName}>Investment fund</Text>
+          <Text style={S.toggleName}>Investment fund</Text>
           <AnimatedToggle isOn={investEnabled} />
         </Pressable>
 
-        <View style={S.hybridDivider} />
+        <View style={S.toggleDivider} />
 
-        {/* Welfare */}
-        <Pressable style={S.hybridToggleRow} onPress={onToggleWelfare}>
-          <View style={[S.hybridToggleIcon, { backgroundColor: "#EDE9FE" }]}>
-            <Text style={S.hybridToggleEmoji}>🤝</Text>
+        <Pressable style={S.toggleRow} onPress={onToggleWelfare}>
+          <View style={[S.toggleIcon, { backgroundColor: "#EDE9FE" }]}>
+            <Feather name="shield" size={16} color="#7C3AED" />
           </View>
-          <Text style={S.hybridToggleName}>Welfare / savings pot</Text>
+          <Text style={S.toggleName}>Welfare pot</Text>
           <AnimatedToggle isOn={welfareEnabled} />
         </Pressable>
       </View>
@@ -313,226 +102,275 @@ function HybridBuilder({
       {/* MGR slider */}
       <View style={S.sliderSection}>
         <View style={S.sliderHeader}>
-          <Text style={S.sliderLabelText}>MERRY-GO-ROUND</Text>
-          <Text style={S.sliderPctText}>{mgrPct}%</Text>
+          <Text style={S.sliderLabel}>MERRY-GO-ROUND</Text>
+          <Text style={S.sliderPct}>{mgrPct}%</Text>
         </View>
         <View style={S.sliderRow}>
           <Pressable style={S.stepBtn} onPress={() => onAdjustMgr(-10)}>
             <Text style={S.stepBtnText}>−</Text>
           </Pressable>
-          <View style={S.trackContainer}>
+          <View style={S.trackWrap}>
             <View style={S.trackBg} />
             <View style={[S.trackFill, { width: `${mgrPct}%` as any }]} />
-            <View
-              style={[
-                S.trackThumb,
-                { left: `${mgrPct}%` as any, marginLeft: -11 },
-              ]}
-            />
+            <View style={[S.trackThumb, { left: `${mgrPct}%` as any, marginLeft: -11 }]} />
           </View>
           <Pressable style={S.stepBtn} onPress={() => onAdjustMgr(10)}>
             <Text style={S.stepBtnText}>+</Text>
           </Pressable>
         </View>
 
-        {/* Auto bars */}
         {investEnabled && (
-          <View style={[S.autoBarRow, { marginTop: Spacing[4] }]}>
-            <Text style={S.autoBarLabel}>INVESTMENT FUND</Text>
-            <Text style={[S.autoBarPct, { color: "#3B82F6" }]}>
-              {investPct}%
-            </Text>
-            <View style={S.autoTrackBg}>
-              <View
-                style={[
-                  S.autoTrackFill,
-                  {
-                    width: `${investPct}%` as any,
-                    backgroundColor: "#93C5FD",
-                  },
-                ]}
-              />
+          <View style={{ marginTop: 12 }}>
+            <View style={S.autoBarHeader}>
+              <Text style={S.autoBarLabel}>INVESTMENT FUND</Text>
+              <Text style={[S.autoBarPct, { color: "#3B82F6" }]}>{investPct}%</Text>
             </View>
-          </View>
-        )}
-
-        {welfareEnabled && (
-          <View style={[S.autoBarRow, { marginTop: Spacing[3] }]}>
-            <Text style={S.autoBarLabel}>WELFARE POT</Text>
-            <Text style={[S.autoBarPct, { color: "#7C3AED" }]}>
-              {welfarePct}%
-            </Text>
-            <View style={S.autoTrackBg}>
-              <View
-                style={[
-                  S.autoTrackFill,
-                  {
-                    width: `${welfarePct}%` as any,
-                    backgroundColor: "#C4B5FD",
-                  },
-                ]}
-              />
+            <View style={S.autoTrack}>
+              <View style={[S.autoFill, { width: `${investPct}%` as any, backgroundColor: "#93C5FD" }]} />
             </View>
           </View>
         )}
       </View>
 
-      {/* Live breakdown card */}
+      {/* Breakdown card — #E8F7F4 bg with colored dots */}
       <View style={S.breakdownCard}>
         <Text style={S.breakdownTitle}>
-          Each{" "}
-          <Text style={S.breakdownBold}>
-            Ksh {contribution.toLocaleString()}
-          </Text>{" "}
-          contribution splits as:
+          Each <Text style={S.breakdownBold}>Ksh {contribution.toLocaleString()}</Text> contribution splits as:
         </Text>
         <View style={S.breakdownRows}>
           <View style={S.breakdownRow}>
-            <View style={[S.breakdownDot, { backgroundColor: Colors.primary }]} />
-            <Text style={S.breakdownItem}>MGR pot</Text>
-            <Text style={S.breakdownAmount}>
-              Ksh {mgrAmount.toLocaleString()}
-            </Text>
+            <View style={[S.bDot, { backgroundColor: Colors.primary }]} />
+            <Text style={S.bItem}>MGR pot</Text>
+            <Text style={S.bAmt}>Ksh {mgrAmt.toLocaleString()}</Text>
           </View>
           {investEnabled && (
             <View style={S.breakdownRow}>
-              <View
-                style={[S.breakdownDot, { backgroundColor: "#93C5FD" }]}
-              />
-              <Text style={S.breakdownItem}>Investment fund</Text>
-              <Text style={S.breakdownAmount}>
-                Ksh {invAmount.toLocaleString()}
-              </Text>
+              <View style={[S.bDot, { backgroundColor: "#93C5FD" }]} />
+              <Text style={S.bItem}>Investment fund</Text>
+              <Text style={S.bAmt}>Ksh {invAmt.toLocaleString()}</Text>
             </View>
           )}
           {welfareEnabled && (
             <View style={S.breakdownRow}>
-              <View
-                style={[S.breakdownDot, { backgroundColor: "#C4B5FD" }]}
-              />
-              <Text style={S.breakdownItem}>Welfare pot</Text>
-              <Text style={S.breakdownAmount}>
-                Ksh {welfareAmount.toLocaleString()}
-              </Text>
+              <View style={[S.bDot, { backgroundColor: "#C4B5FD" }]} />
+              <Text style={S.bItem}>Welfare pot</Text>
+              <Text style={S.bAmt}>Ksh {welfareAmt.toLocaleString()}</Text>
             </View>
           )}
         </View>
-        <Text style={S.breakdownNote}>
-          After 3 months your welfare pot = Ksh{" "}
-          {welfareEnabled
-            ? (welfareAmount * 3).toLocaleString()
-            : "0"}{" "}
-          — available for member loans immediately.
-        </Text>
+        {!welfareEnabled && (
+          <Text style={S.breakdownNote}>No welfare pot yet — toggle it above to add one</Text>
+        )}
       </View>
     </View>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Chama type card
+//  Data
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CardProps {
-  item: ChamaTypeData;
+const TYPE_ICON_BG: Record<string, string> = {
+  merry_go_round: "#FEF3C7",
+  investment:     "#DBEAFE",
+  welfare:        "#EDE9FE",
+  hybrid:         "#D1FAE5",
+};
+const TYPE_FEATHER: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
+  merry_go_round: "rotate-cw",
+  investment:     "trending-up",
+  welfare:        "shield",
+  hybrid:         "sliders",
+};
+const TYPE_COLOR: Record<string, string> = {
+  merry_go_round: "#D97706",
+  investment:     "#3B82F6",
+  welfare:        "#7C3AED",
+  hybrid:         "#059669",
+};
+
+type ChamaTypeId = "merry_go_round" | "investment" | "welfare" | "hybrid";
+
+const CHAMA_TYPES = [
+  { id: "merry_go_round" as ChamaTypeId, title: "Merry-go-round", swahili: "Mchezo",        description: "Pot rotates to one member per cycle until all have received.", badge: "MOST POPULAR", bestFor: "Predictable lump-sum payouts" },
+  { id: "investment"     as ChamaTypeId, title: "Investment chama", swahili: "Uwekezaji",   description: "Group votes on stocks, land, unit trusts, or a business.",   bestFor: "Long-term wealth building" },
+  { id: "welfare"        as ChamaTypeId, title: "Welfare / savings", swahili: "Akiba",      description: "Borrow from the group pot at low interest.",                 bestFor: "Emergency affordable credit" },
+  { id: "hybrid"         as ChamaTypeId, title: "Hybrid",            swahili: "Mchanganyiko", description: "Combine two or three types with a custom split.",          bestFor: "Maximum flexibility" },
+];
+
+const TYPE_ROUTE: Record<ChamaTypeId, string> = {
+  merry_go_round: "MGRSetup",
+  investment:     "InvestmentSetup",
+  welfare:        "WelfareSetup",
+  hybrid:         "InviteMembers",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Chama card — equal height when unselected, smooth expansion when selected
+//  Swahili on the SAME LINE as English title, italic gray
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ChamaCard({ item, selected, onPress, hybridContent }: {
+  item: typeof CHAMA_TYPES[0];
   selected: boolean;
   onPress: () => void;
-  expanded?: boolean;
   hybridContent?: React.ReactNode;
-}
+}) {
+  const expandAnim = useRef(new Animated.Value(0)).current;
 
-function ChamaCard({
-  item,
-  selected,
-  onPress,
-  expanded,
-  hybridContent,
-}: CardProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () =>
-    Animated.spring(scale, {
-      toValue: 0.975,
-      useNativeDriver: true,
-      tension: 120,
-      friction: 8,
+  useEffect(() => {
+    Animated.timing(expandAnim, {
+      toValue: selected && hybridContent ? 1 : 0,
+      duration: 260,
+      useNativeDriver: false,
     }).start();
-
-  const handlePressOut = () =>
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 120,
-      friction: 8,
-    }).start();
+  }, [selected]);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[S.card, selected && S.cardSelected]}
-      >
-        {/* Top row */}
-        <View style={S.cardTopRow}>
-          {/* Icon */}
-          <View style={[S.iconCircle, { backgroundColor: item.iconBg }]}>
-            <Text style={S.iconEmoji}>{item.icon}</Text>
-          </View>
-
-          {/* Text */}
-          <View style={S.cardTextBlock}>
-            <View style={S.cardTitleRow}>
-              <Text style={S.cardTitle}>{item.title}</Text>
-              <Text style={S.cardSwahili}>{item.swahili}</Text>
-            </View>
-            {item.badge && (
-              <View style={S.badge}>
-                <Text style={S.badgeText}>{item.badge}</Text>
-              </View>
-            )}
-            <Text style={S.cardDesc}>{item.description}</Text>
-            <View style={S.bestForRow}>
-              <Text style={S.bestForLabel}>Best for: </Text>
-              <Text style={S.bestForValue}>{item.bestFor}</Text>
-            </View>
-          </View>
-
-          {/* Radio */}
-          <View style={[S.radio, selected && S.radioSelected]}>
-            {selected && <View style={S.radioDot} />}
-          </View>
+    <Pressable
+      style={[S.card, selected && S.cardSelected]}
+      onPress={onPress}
+    >
+      {/* Fixed-height card top — all cards same height at this section */}
+      <View style={S.cardTop}>
+        {/* Icon */}
+        <View style={[S.iconBox, { backgroundColor: TYPE_ICON_BG[item.id] }]}>
+          <Feather name={TYPE_FEATHER[item.id]} size={20} color={TYPE_COLOR[item.id]} />
         </View>
 
-        {/* Hybrid builder — inline expansion */}
-        {selected && expanded && hybridContent && (
-          <View style={S.cardExpansion}>{hybridContent}</View>
-        )}
-      </Pressable>
-    </Animated.View>
+        {/* Text */}
+        <View style={S.cardMeta}>
+          {item.badge ? (
+            <View style={S.popularBadge}>
+              <Text style={S.popularBadgeText}>{item.badge}</Text>
+            </View>
+          ) : null}
+
+          {/* Title + Swahili on SAME LINE */}
+          <Text style={S.cardTitle} numberOfLines={1}>
+            {item.title}
+            <Text style={S.cardSwahili}> · {item.swahili}</Text>
+          </Text>
+
+          <Text style={S.cardDesc} numberOfLines={2}>{item.description}</Text>
+          <Text style={S.bestFor} numberOfLines={1}>
+            <Text style={S.bestForLabel}>Best for: </Text>
+            <Text style={S.bestForVal}>{item.bestFor}</Text>
+          </Text>
+        </View>
+
+        {/* Radio */}
+        <View style={[S.radio, selected && S.radioSelected]}>
+          {selected && <View style={S.radioDot} />}
+        </View>
+      </View>
+
+      {/* Hybrid builder expands smoothly below — other cards stay full opacity */}
+      {hybridContent && selected && (
+        <View style={S.cardExpansion}>
+          {hybridContent}
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Main screen
+//  MGR nudge modal — slides up from bottom, rounded top corners
+// ─────────────────────────────────────────────────────────────────────────────
+
+function NudgeModal({ visible, onKeep, onAddPot }: {
+  visible: boolean;
+  onKeep: () => void;
+  onAddPot: () => void;
+}) {
+  const fade  = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fade,  { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(slide, { toValue: 0, tension: 70, friction: 11, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fade,  { toValue: 0, duration: 150, useNativeDriver: true }),
+        Animated.timing(slide, { toValue: 100, duration: 150, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+      <Animated.View style={[S.overlay, { opacity: fade }]}>
+        {/* Tap outside to dismiss */}
+        <Pressable style={{ flex: 1 }} onPress={onKeep} />
+
+        {/* Bottom sheet — slides up, rounded top corners only */}
+        <Animated.View style={[S.sheet, { transform: [{ translateY: slide }] }]}>
+          {/* Drag handle */}
+          <View style={S.sheetHandle} />
+
+          {/* 48px amber circle with alert-triangle */}
+          <View style={S.nudgeAccent}>
+            <Feather name="alert-triangle" size={22} color="#D97706" />
+          </View>
+
+          <Text style={S.nudgeQ}>
+            What happens if Akinyi needs money urgently — before her turn in month 7?
+          </Text>
+
+          {/* Two scenario cards — exactly same size, side by side */}
+          <View style={S.scenarioRow}>
+            <View style={[S.scenario, S.scenarioBad]}>
+              <Text style={S.scenarioBadLabel}>Pure MGR</Text>
+              <Text style={S.scenarioBadText}>She waits or borrows outside at 30–40% interest.</Text>
+            </View>
+            <View style={[S.scenario, S.scenarioGood]}>
+              <Text style={S.scenarioGoodLabel}>MGR + Savings</Text>
+              <Text style={S.scenarioGoodText}>Borrows from group in 48 hrs at 5%.</Text>
+            </View>
+          </View>
+
+          <Text style={S.nudgeHint}>
+            Adding just{" "}
+            <Text style={{ fontFamily: FontFamily.heading, color: Colors.textPrimary }}>
+              20% to a savings pot
+            </Text>{" "}
+            costs less than a single M-Pesa fee per member per month.
+          </Text>
+
+          <TouchableOpacity style={S.nudgePrimary} onPress={onAddPot} activeOpacity={0.85}>
+            <Text style={S.nudgePrimaryText}>Add a small savings pot</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={S.nudgeSecondary} onPress={onKeep} activeOpacity={0.85}>
+            <Text style={S.nudgeSecondaryText}>Keep pure MGR for now</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Screen
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ChamaTypeScreen({ navigation }: any) {
-  const [selectedType, setSelectedType] = useState<ChamaTypeId>("merry_go_round");
-  const [nudgeVisible, setNudgeVisible] = useState(false);
+  const [selected, setSelected] = useState<ChamaTypeId>("merry_go_round");
+  const [nudge, setNudge] = useState(false);
 
-  // Hybrid state
-  const BASE_CONTRIBUTION = 5000;
-  const [mgrEnabled] = useState(true); // always on
   const [investEnabled, setInvestEnabled] = useState(true);
   const [welfareEnabled, setWelfareEnabled] = useState(false);
   const [mgrPct, setMgrPct] = useState(60);
+  const CONTRIB = 5000;
 
   const welfarePct = welfareEnabled ? 10 : 0;
-  const remaining = 100 - welfarePct;
+  const remaining  = 100 - welfarePct;
   const clampedMgr = Math.min(mgrPct, remaining - (investEnabled ? 10 : 0));
-  const investPct = investEnabled ? remaining - clampedMgr : 0;
+  const investPct  = investEnabled ? remaining - clampedMgr : 0;
 
   const adjustMgr = (delta: number) => {
     const max = remaining - (investEnabled ? 10 : 0);
@@ -540,126 +378,107 @@ export default function ChamaTypeScreen({ navigation }: any) {
     setMgrPct((p) => Math.min(max, Math.max(min, p + delta)));
   };
 
-  const handleSelectType = (id: ChamaTypeId) => {
-    setSelectedType(id);
-    // Trigger nudge when selecting pure MGR
-    if (id === "merry_go_round") {
-      setTimeout(() => setNudgeVisible(true), 400);
-    }
-  };
-
-  const handleKeepMGR = () => {
-    setNudgeVisible(false);
-  };
-
-  const handleAddPot = () => {
-    setNudgeVisible(false);
-    // Switch to hybrid pre-configured as MGR + welfare
-    setSelectedType("hybrid");
-    setInvestEnabled(false);
-    setWelfareEnabled(true);
-    setMgrPct(80);
+  const handleSelect = (id: ChamaTypeId) => {
+    setSelected(id);
+    if (id === "merry_go_round") setTimeout(() => setNudge(true), 360);
   };
 
   const handleContinue = () => {
-    if (selectedType === "hybrid") {
-      navigation.navigate("InviteMembers", {
-        chamaType: "HYBRID",
-        mgrPercent: clampedMgr,
-        investPercent: investPct,
-        welfarePercent: welfarePct,
-      });
+    if (selected === "hybrid") {
+      navigation.navigate("InviteMembers", { chamaType: "HYBRID", mgrPercent: clampedMgr, investPercent: investPct, welfarePercent: welfarePct });
     } else {
-      navigation.navigate(TYPE_ROUTE_MAP[selectedType]);
+      navigation.navigate(TYPE_ROUTE[selected]);
     }
   };
 
   return (
     <SafeAreaView style={S.screen}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
-      {/* Header */}
-      <View style={S.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [S.backBtn, pressed && S.backBtnPressed]}
-          hitSlop={12}
-        >
-          <Text style={S.backArrow}>←</Text>
-        </Pressable>
-        <Text style={S.headerTitle}>New chama</Text>
-        <View style={{ width: 40 }} />
+      {/* Hero */}
+      <View style={S.hero}>
+        <HeroCircles />
+        <View style={S.heroNav}>
+          <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
+            <Feather name="chevron-left" size={18} color="#fff" />
+          </Pressable>
+          <Text style={S.heroNavTitle}>New chama · Step 2 of 3</Text>
+        </View>
+        <ProgressBar step={2} total={3} />
+        <Text style={S.heroTitle}>Choose your{"\n"}chama type</Text>
+        <Text style={S.heroSub}>
+          {selected === "hybrid"
+            ? "Hybrid selected — configure your split below"
+            : "Select the structure that fits your group"}
+        </Text>
       </View>
 
-      {/* Scrollable content */}
-      <ScrollView
-        contentContainerStyle={S.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Hero text */}
-        <Text style={S.screenTitle}>Choose your{"\n"}chama type</Text>
-        <Text style={S.screenSub}>
-          Select the structure that best fits how your group will save, invest,
-          or rotate money.
-        </Text>
-
-        {/* Cards */}
+      {/* Cards list — non-selected cards stay at FULL opacity, only slightly dimmed */}
+      <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={S.cardList}>
-          {CHAMA_TYPES.map((type) => (
-            <ChamaCard
-              key={type.id}
-              item={type}
-              selected={selectedType === type.id}
-              onPress={() => handleSelectType(type.id)}
-              expanded={type.id === "hybrid"}
-              hybridContent={
-                type.id === "hybrid" ? (
-                  <HybridBuilder
-                    contribution={BASE_CONTRIBUTION}
-                    mgrPct={clampedMgr}
-                    investPct={investPct}
-                    welfarePct={welfarePct}
-                    welfareEnabled={welfareEnabled}
-                    investEnabled={investEnabled}
-                    onAdjustMgr={adjustMgr}
-                    onToggleWelfare={() => setWelfareEnabled((v) => !v)}
-                    onToggleInvest={() => setInvestEnabled((v) => !v)}
-                  />
-                ) : undefined
-              }
-            />
+          {CHAMA_TYPES.map((t) => (
+            <View
+              key={t.id}
+              style={[
+                // dim NON-selected cards when hybrid is expanded (not when another simple type selected)
+                selected === "hybrid" && t.id !== "hybrid"
+                  ? { opacity: 0.45 }
+                  : undefined,
+              ]}
+            >
+              <ChamaCard
+                item={t}
+                selected={selected === t.id}
+                onPress={() => handleSelect(t.id)}
+                hybridContent={
+                  t.id === "hybrid" ? (
+                    <HybridBuilder
+                      contribution={CONTRIB}
+                      mgrPct={clampedMgr}
+                      investPct={investPct}
+                      welfarePct={welfarePct}
+                      investEnabled={investEnabled}
+                      welfareEnabled={welfareEnabled}
+                      onAdjustMgr={adjustMgr}
+                      onToggleInvest={() => setInvestEnabled((v) => !v)}
+                      onToggleWelfare={() => setWelfareEnabled((v) => !v)}
+                    />
+                  ) : undefined
+                }
+              />
+            </View>
           ))}
         </View>
 
         {/* Chairperson note */}
-        <View style={S.chairpersonNote}>
-          <Text style={S.chairpersonIcon}>👑</Text>
-          <Text style={S.chairpersonText}>
-            By creating this chama, you automatically become its{" "}
-            <Text style={S.chairpersonBold}>Chairperson</Text>.
+        <View style={S.chairNote}>
+          <Feather name="star" size={16} color="#D97706" />
+          <Text style={S.chairText}>
+            Creating this chama makes you its <Text style={S.chairBold}>Chairperson</Text> automatically.
           </Text>
         </View>
       </ScrollView>
 
       {/* Footer */}
       <View style={S.footer}>
-        <Pressable
-          style={({ pressed }) => [
-            S.continueBtn,
-            pressed && S.continueBtnPressed,
-          ]}
-          onPress={handleContinue}
-        >
-          <Text style={S.continueBtnText}>Continue</Text>
-        </Pressable>
+        <TouchableOpacity style={S.btnPrimary} onPress={handleContinue} activeOpacity={0.85}>
+          <Text style={S.btnPrimaryText}>
+            {selected === "hybrid" ? "Continue with hybrid" : "Continue"}
+          </Text>
+          <Feather name="arrow-right" size={18} color="#fff" />
+        </TouchableOpacity>
       </View>
 
-      {/* MGR nudge modal */}
       <NudgeModal
-        visible={nudgeVisible}
-        onKeepMGR={handleKeepMGR}
-        onAddPot={handleAddPot}
+        visible={nudge}
+        onKeep={() => setNudge(false)}
+        onAddPot={() => {
+          setNudge(false);
+          setSelected("hybrid");
+          setInvestEnabled(false);
+          setWelfareEnabled(true);
+          setMgrPct(80);
+        }}
       />
     </SafeAreaView>
   );
@@ -670,628 +489,228 @@ export default function ChamaTypeScreen({ navigation }: any) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
-  // ── Screen ────────────────────────────────────────────────────────────────
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  screen: { flex: 1, backgroundColor: Colors.primary },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-    backgroundColor: Colors.surface,
+  // Hero
+  hero: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing[5], paddingTop: 40, paddingBottom: 20,
+    overflow: "hidden", gap: 8,
   },
+  circleTopRight: {
+    position: "absolute", width: 200, height: 200, borderRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.05)", top: -60, right: -60,
+  },
+  circleBottomLeft: {
+    position: "absolute", width: 160, height: 160, borderRadius: 80,
+    backgroundColor: "rgba(245,158,11,0.10)", bottom: -50, left: -40,
+  },
+  heroNav: { flexDirection: "row", alignItems: "center", gap: 10 },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.input,
-    backgroundColor: Colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
   },
-  backBtnPressed: {
-    backgroundColor: Colors.divider,
+  heroNavTitle: { fontFamily: FontFamily.medium, fontSize: 13, color: "rgba(255,255,255,0.85)" },
+  progressTrack: { height: 3, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 2, overflow: "hidden" },
+  progressFill:  { height: 3, backgroundColor: "#F59E0B", borderRadius: 2 },
+  heroTitle: {
+    fontFamily: FontFamily.extraBold, fontSize: 24, color: "#FFFFFF",
+    fontWeight: "800", lineHeight: 30, letterSpacing: -0.3,
   },
-  backArrow: {
-    fontSize: 20,
-    color: Colors.textPrimary,
-    lineHeight: 22,
-  },
-  headerTitle: {
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
+  heroSub: { fontFamily: FontFamily.regular, fontSize: 13, color: "rgba(255,255,255,0.65)" },
 
-  // ── Content ───────────────────────────────────────────────────────────────
-  content: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[6],
-    paddingBottom: Spacing[10],
+  // Scroll
+  scrollContent: {
+    backgroundColor: "#F6F9F7",
+    paddingHorizontal: Spacing[4], paddingTop: Spacing[4], paddingBottom: 100,
   },
-  screenTitle: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize["6xl"],
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-    lineHeight: 42,
-    letterSpacing: -0.5,
-    marginBottom: Spacing[2],
-  },
-  screenSub: {
-    fontFamily: FontFamily.medium,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: Spacing[7],
-  },
+  cardList: { gap: 10, marginBottom: Spacing[4] },
 
-  // ── Card list ─────────────────────────────────────────────────────────────
-  cardList: {
-    gap: Spacing[3],
-    marginBottom: Spacing[6],
-  },
-
-  // ── Card ──────────────────────────────────────────────────────────────────
+  // Card — fixed height for the top section so all look same when unselected
   card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.card,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14, borderWidth: 1, borderColor: "#EBF1EF",
     overflow: "hidden",
-    ...Shadow.sm,
   },
-  cardSelected: {
-    borderColor: Colors.primary,
-    borderWidth: 2,
-    backgroundColor: Colors.primaryTint,
+  cardSelected: { borderColor: Colors.primary, borderWidth: 2 },
+
+  cardTop: {
+    flexDirection: "row", alignItems: "flex-start",
+    padding: 14, gap: 12,
+    // Set a min-height so short cards match tall ones
+    minHeight: 98,
   },
-  cardTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: Spacing[4],
-    gap: Spacing[3],
+  iconBox: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2,
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    marginTop: 2,
+  cardMeta: { flex: 1, gap: 3 },
+  popularBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FEF3C7", borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 2,
   },
-  iconEmoji: {
-    fontSize: 22,
-    lineHeight: 26,
+  popularBadgeText: {
+    fontFamily: FontFamily.heading, fontSize: 9, color: "#D97706",
+    fontWeight: "700", letterSpacing: 0.5,
   },
-  cardTextBlock: {
-    flex: 1,
-  },
-  cardTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[2],
-    marginBottom: Spacing[1],
-  },
+
+  // Title + swahili on same line
   cardTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    fontFamily: FontFamily.heading, fontSize: 15, color: Colors.textPrimary, fontWeight: "700",
+    lineHeight: 20,
   },
   cardSwahili: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.regular,
-    color: Colors.textMuted,
-    fontStyle: "italic",
-  },
-  badge: {
-    alignSelf: "flex-start",
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 2,
-    marginBottom: Spacing[1.5],
-  },
-  badgeText: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.micro,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.accentDark,
-    letterSpacing: 0.5,
+    fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted,
+    fontStyle: "italic", fontWeight: "400",
   },
   cardDesc: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.regular,
-    color: Colors.textSecondary,
-    lineHeight: 19,
-    marginBottom: Spacing[1.5],
+    fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textSecondary, lineHeight: 17,
   },
-  bestForRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-  },
-  bestForLabel: {
-    fontFamily: FontFamily.medium,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.medium,
-    color: Colors.textMuted,
-  },
-  bestForValue: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
-    color: Colors.primary,
-  },
+  bestFor: { flexDirection: "row", flexWrap: "wrap" },
+  bestForLabel: { fontFamily: FontFamily.medium, fontSize: 11, color: Colors.textMuted },
+  bestForVal:   { fontFamily: FontFamily.heading, fontSize: 11, color: Colors.primary, fontWeight: "700" },
 
-  // Radio
   radio: {
-    width: 22,
-    height: 22,
-    borderRadius: Radius.full,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    marginTop: 4,
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 1.5, borderColor: "#C8D8D4",
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  radioSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-  },
+  radioSelected: { borderColor: Colors.primary },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary },
 
-  // Card expansion
-  cardExpansion: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-  },
+  cardExpansion: { borderTopWidth: 1, borderTopColor: "#EBF1EF" },
 
-  // ── Animated toggle ───────────────────────────────────────────────────────
-  toggleTrack: {
-    width: 46,
-    height: 27,
-    borderRadius: Radius.full,
-    justifyContent: "center",
-    flexShrink: 0,
+  // Hybrid builder
+  hybridWrap: { padding: 14, backgroundColor: "#FFFFFF" },
+  hybridTitle: { fontFamily: FontFamily.heading, fontSize: 13, color: Colors.textPrimary, fontWeight: "700", marginBottom: 2 },
+  hybridSub:   { fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 14 },
+
+  toggleBlock: {
+    backgroundColor: "#F6F9F7", borderRadius: 10, borderWidth: 1, borderColor: "#EBF1EF",
+    overflow: "hidden", marginBottom: 16,
   },
+  toggleRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 12, paddingVertical: 10, gap: 10,
+  },
+  toggleIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  toggleName: { flex: 1, fontFamily: FontFamily.medium, fontSize: 13, color: Colors.textPrimary },
+  toggleDivider: { height: 1, backgroundColor: "#EBF1EF", marginHorizontal: 12 },
+  alwaysOnBadge: { backgroundColor: "#E8F7F4", borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  alwaysOnText:  { fontFamily: FontFamily.heading, fontSize: 10, color: Colors.primary, fontWeight: "700" },
+  toggleTrack: { width: 44, height: 25, borderRadius: 13, justifyContent: "center" },
   toggleThumb: {
-    width: 21,
-    height: 21,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
-    position: "absolute",
-    ...Shadow.sm,
+    width: 21, height: 21, borderRadius: 11, backgroundColor: "#FFFFFF",
+    position: "absolute", ...Shadow.sm,
   },
 
-  // ── Hybrid builder ────────────────────────────────────────────────────────
-  hybridContainer: {
-    padding: Spacing[4],
-    backgroundColor: Colors.surface,
-  },
-  hybridTitle: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing[1],
-  },
-  hybridSub: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.regular,
-    color: Colors.textSecondary,
-    lineHeight: 19,
-    marginBottom: Spacing[5],
-  },
-
-  // Hybrid toggles
-  hybridToggles: {
-    backgroundColor: Colors.background,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: "hidden",
-    marginBottom: Spacing[6],
-  },
-  hybridToggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[3.5],
-    gap: Spacing[3],
-  },
-  hybridToggleIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hybridToggleEmoji: { fontSize: 18 },
-  hybridToggleName: {
-    flex: 1,
-    fontFamily: FontFamily.medium,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  hybridToggleOnBadge: {
-    backgroundColor: Colors.primaryLight,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 2,
-  },
-  hybridToggleOnText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
-    color: Colors.primary,
-  },
-  hybridDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginHorizontal: Spacing[4],
-  },
-
-  // Slider section
-  sliderSection: {
-    marginBottom: Spacing[5],
-  },
-  sliderHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing[3],
-  },
-  sliderLabelText: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.xxs,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textSecondary,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  sliderPctText: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize["2xl"],
-    fontWeight: FontWeight.extraBold,
-    color: Colors.primary,
-  },
-  sliderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[3],
-  },
+  // Slider
+  sliderSection: { marginBottom: 16 },
+  sliderHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
+  sliderLabel:  { fontFamily: FontFamily.heading, fontSize: 10, color: Colors.textSecondary, fontWeight: "700", letterSpacing: 1 },
+  sliderPct:    { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.primary, fontWeight: "800" },
+  sliderRow:    { flexDirection: "row", alignItems: "center", gap: 10 },
   stepBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: "#F6F9F7", borderWidth: 1, borderColor: "#EBF1EF",
+    alignItems: "center", justifyContent: "center",
   },
-  stepBtnText: {
-    color: Colors.primary,
-    fontSize: FontSize["2xl"],
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    lineHeight: 28,
-  },
-  trackContainer: {
-    flex: 1,
-    height: 8,
-    position: "relative",
-    justifyContent: "center",
-  },
-  trackBg: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 8,
-    backgroundColor: Colors.border,
-    borderRadius: Radius.xs,
-  },
-  trackFill: {
-    position: "absolute",
-    left: 0,
-    height: 8,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.xs,
-  },
+  stepBtnText: { fontFamily: FontFamily.heading, fontSize: 18, color: Colors.primary, lineHeight: 22, fontWeight: "700" },
+  trackWrap: { flex: 1, height: 6, position: "relative" },
+  trackBg:   { position: "absolute", left: 0, right: 0, height: 6, backgroundColor: "#EBF1EF", borderRadius: 3 },
+  trackFill: { position: "absolute", left: 0, height: 6, backgroundColor: Colors.primary, borderRadius: 3 },
   trackThumb: {
-    position: "absolute",
-    width: 22,
-    height: 22,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 3,
-    borderColor: Colors.primary,
-    top: -7,
-    ...Shadow.sm,
+    position: "absolute", width: 22, height: 22, borderRadius: 11,
+    backgroundColor: "#FFFFFF", borderWidth: 2.5, borderColor: Colors.primary, top: -8, ...Shadow.sm,
   },
+  autoBarHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+  autoBarLabel:  { fontFamily: FontFamily.heading, fontSize: 9, color: Colors.textSecondary, letterSpacing: 1, fontWeight: "700", textTransform: "uppercase" },
+  autoBarPct:    { fontFamily: FontFamily.heading, fontSize: 11, fontWeight: "700" },
+  autoTrack:     { height: 5, backgroundColor: "#EBF1EF", borderRadius: 3, overflow: "hidden" },
+  autoFill:      { height: 5, borderRadius: 3 },
 
-  // Auto bars
-  autoBarRow: {
-    gap: Spacing[2],
-  },
-  autoBarLabel: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.xxs,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: Spacing[1],
-  },
-  autoBarPct: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.bold,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
-  autoTrackBg: {
-    height: 6,
-    backgroundColor: Colors.border,
-    borderRadius: Radius.xs,
-    overflow: "hidden",
-  },
-  autoTrackFill: {
-    height: 6,
-    borderRadius: Radius.xs,
-  },
-
-  // Breakdown card
+  // Breakdown card — #E8F7F4 bg with colored dots
   breakdownCard: {
-    backgroundColor: Colors.successBg,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.successLight,
-    padding: Spacing[4],
+    backgroundColor: "#E8F7F4", borderRadius: 10, borderWidth: 1, borderColor: "#A8D8CF", padding: 12,
   },
-  breakdownTitle: {
-    fontFamily: FontFamily.medium,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.successDark,
-    lineHeight: 20,
-    marginBottom: Spacing[3],
-  },
-  breakdownBold: {
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  breakdownRows: {
-    gap: Spacing[2],
-    marginBottom: Spacing[3],
-  },
-  breakdownRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[2],
-  },
-  breakdownDot: {
-    width: 8,
-    height: 8,
-    borderRadius: Radius.full,
-  },
-  breakdownItem: {
-    flex: 1,
-    fontFamily: FontFamily.medium,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
-    color: Colors.successDark,
-  },
-  breakdownAmount: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.successDark,
-  },
-  breakdownNote: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.regular,
-    color: Colors.success,
-    lineHeight: 17,
-    borderTopWidth: 1,
-    borderTopColor: Colors.successLight,
-    paddingTop: Spacing[2.5],
-  },
+  breakdownTitle: { fontFamily: FontFamily.medium, fontSize: 13, color: "#065F46", lineHeight: 18, marginBottom: 8 },
+  breakdownBold:  { fontFamily: FontFamily.heading, fontWeight: "700" },
+  breakdownRows:  { gap: 6, marginBottom: 6 },
+  breakdownRow:   { flexDirection: "row", alignItems: "center", gap: 8 },
+  bDot:   { width: 8, height: 8, borderRadius: 4 },
+  bItem:  { flex: 1, fontFamily: FontFamily.medium, fontSize: 12, color: "#065F46" },
+  bAmt:   { fontFamily: FontFamily.heading, fontSize: 12, color: "#065F46", fontWeight: "700" },
+  breakdownNote: { fontFamily: FontFamily.regular, fontSize: 11, color: "#2E9E87", lineHeight: 15 },
 
-  // ── Chairperson note ──────────────────────────────────────────────────────
-  chairpersonNote: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: Colors.accentTint,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.warningLight,
-    paddingVertical: Spacing[3.5],
-    paddingHorizontal: Spacing[4],
-    gap: Spacing[3],
+  // Chairperson note
+  chairNote: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    backgroundColor: "#FFFBEB", borderRadius: 10, borderWidth: 1, borderColor: "#FDE68A", padding: 12,
   },
-  chairpersonIcon: {
-    fontSize: 22,
-    lineHeight: 26,
-  },
-  chairpersonText: {
-    flex: 1,
-    fontFamily: FontFamily.medium,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.warningDark,
-    lineHeight: 21,
-  },
-  chairpersonBold: {
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    color: "#78350F",
-  },
+  chairText: { flex: 1, fontFamily: FontFamily.regular, fontSize: 13, color: "#92400E", lineHeight: 18 },
+  chairBold: { fontFamily: FontFamily.heading, fontWeight: "700", color: "#78350F" },
 
-  // ── Footer ────────────────────────────────────────────────────────────────
+  // Footer
   footer: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[3],
-    paddingBottom: Platform.OS === "android" ? Spacing[6] : Spacing[7],
-    backgroundColor: Colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    backgroundColor: "#FFFFFF", borderTopWidth: 1, borderTopColor: "#EBF1EF",
+    paddingHorizontal: Spacing[5], paddingTop: 12,
+    paddingBottom: Platform.OS === "android" ? 20 : 28,
   },
-  continueBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: 17,
-    alignItems: "center",
-    justifyContent: "center",
-    ...Shadow.button,
+  btnPrimary: {
+    backgroundColor: Colors.primary, borderRadius: Radius.button, height: 50,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
   },
-  continueBtnPressed: {
-    backgroundColor: Colors.primaryPressed,
-  },
-  continueBtnText: {
-    color: Colors.textInverse,
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.3,
-  },
+  btnPrimaryText: { fontFamily: FontFamily.heading, fontSize: FontSize.lg, color: "#FFFFFF", fontWeight: "700" },
 
-  // ── Nudge modal ───────────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(7, 21, 16, 0.6)",
-    justifyContent: "flex-end",
+  // Nudge modal — slides up from bottom, top corners rounded only
+  overlay: { flex: 1, backgroundColor: "rgba(7,21,16,0.65)", justifyContent: "flex-end" },
+  sheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,  borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
+    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 36,
   },
-  nudgeSheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: Spacing[6],
-    paddingTop: Spacing[6],
-    paddingBottom: Platform.OS === "android" ? Spacing[8] : Spacing[10],
+  sheetHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: "#E5E7EB", alignSelf: "center", marginBottom: 20,
   },
   nudgeAccent: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.accentLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[4],
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", marginBottom: 14,
   },
-  nudgeAccentText: {
-    fontSize: 24,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.accentDark,
-    lineHeight: 28,
+  nudgeQ: {
+    fontFamily: FontFamily.extraBold, fontSize: 19, color: Colors.textPrimary,
+    lineHeight: 26, marginBottom: 16, fontWeight: "800", letterSpacing: -0.3,
   },
-  nudgeQuestion: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize["3xl"],
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-    lineHeight: 32,
-    marginBottom: Spacing[5],
-    letterSpacing: -0.3,
+
+  // Scenario cards — EQUAL size with fixed height, side by side
+  scenarioRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  scenario: {
+    flex: 1,               // equal width
+    minHeight: 80,         // equal min height
+    borderRadius: 10, padding: 12, borderWidth: 1,
+    justifyContent: "flex-start",
   },
-  nudgeScenarioRow: {
-    flexDirection: "row",
-    gap: Spacing[3],
-    marginBottom: Spacing[5],
+  scenarioBad:  { backgroundColor: "#FEF2F2", borderColor: "#FECACA" },
+  scenarioGood: { backgroundColor: "#ECFDF5", borderColor: "#D1FAE5" },
+  scenarioBadLabel:  { fontFamily: FontFamily.heading, fontSize: 12, color: "#DC2626", fontWeight: "700", marginBottom: 4 },
+  scenarioBadText:   { fontFamily: FontFamily.regular, fontSize: 12, color: "#DC2626", lineHeight: 16 },
+  scenarioGoodLabel: { fontFamily: FontFamily.heading, fontSize: 12, color: "#059669", fontWeight: "700", marginBottom: 4 },
+  scenarioGoodText:  { fontFamily: FontFamily.regular, fontSize: 12, color: "#059669", lineHeight: 16 },
+
+  nudgeHint: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textSecondary, lineHeight: 19, marginBottom: 20 },
+  nudgePrimary: {
+    backgroundColor: Colors.primary, borderRadius: Radius.button, height: 50,
+    alignItems: "center", justifyContent: "center", marginBottom: 10,
   },
-  nudgeScenario: {
-    flex: 1,
-    borderRadius: Radius.lg,
-    padding: Spacing[3.5],
-    borderWidth: 1,
+  nudgePrimaryText:   { fontFamily: FontFamily.heading, fontSize: 15, color: "#FFFFFF", fontWeight: "700" },
+  nudgeSecondary: {
+    borderRadius: Radius.button, height: 46,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1.5, borderColor: "#EBF1EF",
   },
-  nudgeScenarioBad: {
-    backgroundColor: Colors.errorBg,
-    borderColor: Colors.errorLight,
-  },
-  nudgeScenarioGood: {
-    backgroundColor: Colors.successBg,
-    borderColor: Colors.successLight,
-  },
-  nudgeScenarioLabel: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.bold,
-    color: Colors.errorDark,
-    marginBottom: Spacing[1.5],
-  },
-  nudgeScenarioText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.regular,
-    color: Colors.errorDark,
-    lineHeight: 18,
-  },
-  nudgeHint: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.regular,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: Spacing[6],
-  },
-  nudgeHintBold: {
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  nudgePrimaryBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginBottom: Spacing[3],
-    ...Shadow.button,
-  },
-  nudgePrimaryBtnText: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textInverse,
-    letterSpacing: 0.2,
-  },
-  nudgeSecondaryBtn: {
-    borderRadius: Radius.lg,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  nudgeSecondaryBtnText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.semiBold,
-    color: Colors.textSecondary,
-  },
+  nudgeSecondaryText: { fontFamily: FontFamily.medium, fontSize: 14, color: Colors.textSecondary },
 });

@@ -9,18 +9,15 @@ import {
   Spacing,
 } from "./theme";
 import {
-  TouchableOpacity,
   View,
   Text,
   StyleSheet,
-  type GestureResponderEvent,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
   createBottomTabNavigator,
-  type BottomTabBarButtonProps,
 } from "@react-navigation/bottom-tabs";
 
 import AuthScreen from "./screens/AuthScreen";
@@ -49,22 +46,36 @@ import PerksScreen from "./screens/PerksScreen";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// ─── FAB centre button ──────────────────────────────────────────────────────
+// ─── Bold Earth tab icon + label ────────────────────────────────────────────
 
-function CenterTabButton({ onPress }: BottomTabBarButtonProps) {
+type TabIconName = React.ComponentProps<typeof Feather>["name"];
+
+function TabIcon({
+  icon,
+  label,
+  focused,
+}: {
+  icon: TabIconName;
+  label: string;
+  focused: boolean;
+}) {
   return (
-    <TouchableOpacity
-      onPress={onPress as (e: GestureResponderEvent) => void}
-      activeOpacity={0.82}
-      style={styles.centerWrapper}
-      accessibilityRole="button"
-      accessibilityLabel="Create new chama"
-    >
-      <View style={styles.centerCircle}>
-        {/* Render a plain "+" so it stays white regardless of tint */}
-        <Text style={styles.centerIcon}>+</Text>
-      </View>
-    </TouchableOpacity>
+    <View style={S.tabItem}>
+      <Feather
+        name={icon}
+        size={22}
+        color={focused ? Colors.primary : Colors.tabBarInactive}
+      />
+      <Text
+        style={[
+          S.tabLabel,
+          focused ? S.tabLabelActive : S.tabLabelInactive,
+        ]}
+      >
+        {label}
+      </Text>
+      {focused && <View style={S.tabDot} />}
+    </View>
   );
 }
 
@@ -75,67 +86,52 @@ function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
-        tabBarLabelStyle: styles.tabLabel,
+        tabBarStyle: S.tabBar,
+        tabBarShowLabel: false,
       }}
     >
-      {/* 1 – Home */}
       <Tab.Screen
         name="Home"
         component={DashboardScreen}
         options={{
-          tabBarLabel: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <Feather name={focused ? "home" : "home"} size={21} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="home" label="Home" focused={focused} />
           ),
         }}
       />
-
-      {/* 2 – Perks */}
       <Tab.Screen
-        name="Perks"
-        component={PerksScreen}
+        name="Members"
+        component={MembersScreen}
         options={{
-          tabBarLabel: "Perks",
-          tabBarIcon: ({ color }) => (
-            <Feather name="gift" size={21} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="users" label="Members" focused={focused} />
           ),
         }}
       />
-
-      {/* 3 – Centre FAB (Create) */}
-      <Tab.Screen
-        name="Create"
-        component={ChamaTypeScreen}
-        options={{
-          tabBarLabel: "",
-          tabBarIcon: () => null,
-          tabBarButton: (props) => <CenterTabButton {...props} />,
-        }}
-      />
-
-      {/* 4 – Loans */}
       <Tab.Screen
         name="Loans"
-        component={MemberCreditProfileScreen}
+        component={GroupLoanScreen}
         options={{
-          tabBarLabel: "Credit",
-          tabBarIcon: ({ color }) => (
-            <Feather name="trending-up" size={21} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="dollar-sign" label="Loans" focused={focused} />
           ),
         }}
       />
-
-      {/* 5 – Profile */}
       <Tab.Screen
-        name="Profile"
+        name="Score"
+        component={MemberCreditProfileScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="star" label="Score" focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="More"
         component={ProfileScreen}
         options={{
-          tabBarLabel: "Profile",
-          tabBarIcon: ({ color }) => (
-            <Feather name="user" size={21} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="menu" label="More" focused={focused} />
           ),
         }}
       />
@@ -157,41 +153,23 @@ export default function AppNavigator() {
         <Stack.Screen name="ChamaDetails" component={ChamaDetailsScreen} />
         {/* Chama type-specific setup screens */}
         <Stack.Screen name="MGRSetup" component={MGRSetupScreen} />
-        <Stack.Screen
-          name="InvestmentSetup"
-          component={InvestmentSetupScreen}
-        />
-        <Stack.Screen
-          name="InvestmentDashboard"
-          component={InvestmentDashboardScreen}
-        />
+        <Stack.Screen name="InvestmentSetup" component={InvestmentSetupScreen} />
+        <Stack.Screen name="InvestmentDashboard" component={InvestmentDashboardScreen} />
         <Stack.Screen name="WelfareSetup" component={WelfareSetupScreen} />
         <Stack.Screen name="HybridConfig" component={HybridConfigScreen} />
-        <Stack.Screen
-          name="ContributionDay"
-          component={ContributionDayScreen}
-        />
-        {/* Detail screens reachable from tabs or dashboard */}
-        <Stack.Screen
-          name="MemberCreditProfile"
-          component={MemberCreditProfileScreen}
-        />
-        <Stack.Screen
-          name="LoanEligibility"
-          component={LoanEligibilityScreen}
-        />
+        <Stack.Screen name="ContributionDay" component={ContributionDayScreen} />
+        {/* Detail screens */}
+        <Stack.Screen name="MemberCreditProfile" component={MemberCreditProfileScreen} />
+        <Stack.Screen name="LoanEligibility" component={LoanEligibilityScreen} />
         <Stack.Screen name="BankLoanOffer" component={BankLoanOfferScreen} />
         <Stack.Screen name="Perks" component={PerksScreen} />
         <Stack.Screen name="MGRSchedule" component={MGRScheduleScreen} />
         <Stack.Screen name="GroupLoan" component={GroupLoanScreen} />
         <Stack.Screen name="Members" component={MembersScreen} />
         <Stack.Screen name="InviteMembers" component={InviteMembersScreen} />
-        <Stack.Screen
-          name="PremiumSubscription"
-          component={PremiumSubscriptionScreen}
-        />
-        {/* Alias so navigation.navigate("Settings") from Dashboard works */}
+        <Stack.Screen name="PremiumSubscription" component={PremiumSubscriptionScreen} />
         <Stack.Screen name="Settings" component={ProfileScreen} />
+        <Stack.Screen name="Placeholder" component={PlaceholderScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -199,53 +177,41 @@ export default function AppNavigator() {
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  // Tab bar container
+const S = StyleSheet.create({
   tabBar: {
     backgroundColor: Colors.surface,
-    borderTopColor: Colors.border,
+    borderTopColor: Colors.divider,
     borderTopWidth: 1,
     height: 68,
-    paddingTop: Spacing[2],
-    paddingBottom: Spacing[3],
+    paddingHorizontal: 0,
   },
 
-  // Label beneath each regular tab icon
-  tabLabel: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semiBold,
-    marginTop: 2,
-  },
-
-  // Outer touchable wrapper for the FAB — lifted above the bar
-  centerWrapper: {
-    flex: 1,
+  tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    // Push the circle upward so it floats above the tab bar
-    marginTop: -28,
+    paddingTop: 10,
+    gap: 3,
+    minWidth: 56,
   },
 
-  // The green circle itself
-  centerCircle: {
-    width: 60,
-    height: 60,
+  tabLabel: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.medium,
+  },
+  tabLabelActive: {
+    color: Colors.primary,
+    fontFamily: FontFamily.semiBold,
+  },
+  tabLabelInactive: {
+    color: Colors.tabBarInactive,
+  },
+
+  // ● green dot below active label
+  tabDot: {
+    width: 4,
+    height: 4,
     borderRadius: Radius.full,
     backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    ...Shadow.fab,
-  },
-
-  // White "+" glyph inside the circle
-  centerIcon: {
-    color: Colors.textInverse,
-    fontFamily: FontFamily.regular,
-    fontSize: 34,
-    fontWeight: FontWeight.regular,
-    // Optical centre correction
-    lineHeight: 38,
-    marginTop: -2,
+    marginTop: 1,
   },
 });

@@ -1,640 +1,451 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  Colors,
-  FontFamily,
-  FontSize,
-  FontWeight,
-  Radius,
-  Shadow,
-  Spacing,
-} from "../theme";
-import {
-  ActivityIndicator,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
+  View,
   Text,
   TextInput,
-  View,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Pressable,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { apiClient } from "../api/client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Feather } from "@expo/vector-icons";
+import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
 
-const { width } = Dimensions.get("window");
+// ─────────────────────────────────────────────────────────────────────────────
+//  Hazina logo
+// ─────────────────────────────────────────────────────────────────────────────
 
-function normalizeKenyanPhoneNumber(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.startsWith("254") && digits.length === 12) return `+${digits}`;
-  if (digits.startsWith("0") && digits.length === 10)
-    return `+254${digits.slice(1)}`;
-  if (digits.length === 9 && digits.startsWith("7")) return `+254${digits}`;
-  return value.trim();
+function HazinaLogo({ size = 32 }: { size?: number }) {
+  return (
+    <Text style={[S.logo, { fontSize: size }]}>
+      <Text style={{ color: "#FFFFFF" }}>Hazi</Text>
+      <Text style={{ color: "#F59E0B" }}>na</Text>
+    </Text>
+  );
 }
 
-function isValidKenyanPhoneNumber(value: string) {
-  return /^\+2547\d{8}$/.test(value);
+// ─────────────────────────────────────────────────────────────────────────────
+//  Hero circle overlays
+// ─────────────────────────────────────────────────────────────────────────────
+
+function HeroCircles() {
+  return (
+    <>
+      <View style={S.circleTopRight} />
+      <View style={S.circleBottomLeft} />
+    </>
+  );
 }
 
-export default function AuthScreen({ navigation }: any) {
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [submittedPhone, setSubmittedPhone] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [devOtpHint, setDevOtpHint] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+// ─────────────────────────────────────────────────────────────────────────────
+//  Phone input
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const normalizedPhone = normalizeKenyanPhoneNumber(phoneNumber);
-  const isPhoneValid = isValidKenyanPhoneNumber(normalizedPhone);
+function PhoneInput({
+  value, onChangeText, focused, onFocus, onBlur,
+}: {
+  value: string; onChangeText: (v: string) => void;
+  focused: boolean; onFocus: () => void; onBlur: () => void;
+}) {
+  return (
+    <View style={[S.phoneRow, focused ? S.phoneRowFocused : S.phoneRowBlur]}>
+      <Text style={S.prefix}>+254</Text>
+      <View style={S.phoneDivider} />
+      <TextInput
+        style={S.phoneInput}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholder="7XX XXX XXX"
+        placeholderTextColor={Colors.textMuted}
+        keyboardType="phone-pad"
+        maxLength={9}
+      />
+    </View>
+  );
+}
 
-  const handleMockLogin = async () => {
-    // No fullName set — so onboarding flow is triggered
-    const mockUser = {
-      id: "mock-user-1",
-      phoneNumber: "+254712345678",
-      fullName: "",
-      isVerified: true,
-    };
-    await AsyncStorage.setItem("hazina.accessToken", "mock-token");
-    await AsyncStorage.setItem("hazina.refreshToken", "mock-refresh");
-    await AsyncStorage.setItem("hazina.user", JSON.stringify(mockUser));
-    navigation.replace("Onboarding");
-  };
+// ─────────────────────────────────────────────────────────────────────────────
+//  Sign-in view
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const handleRequestOtp = async () => {
-    if (!isPhoneValid) return;
-    setErrorMessage("");
-    setLoading(true);
-    try {
-      const response = await apiClient.post("/auth/request-otp", {
-        phoneNumber: normalizedPhone,
-      });
-      setSubmittedPhone(normalizedPhone);
-      setDevOtpHint(response.data.code || "");
-      setSuccessMessage("Code sent!");
-      setStep("otp");
-    } catch (error: any) {
-      setErrorMessage(
-        error.response?.data?.error ||
-          error.message ||
-          "Could not send code. Check your connection.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!submittedPhone || otpCode.trim().length !== 6) return;
-    setErrorMessage("");
-    setLoading(true);
-    try {
-      const response = await apiClient.post("/auth/verify-otp", {
-        phoneNumber: submittedPhone,
-        code: otpCode.trim(),
-      });
-      const { accessToken, refreshToken, user } = response.data;
-      await AsyncStorage.setItem("hazina.accessToken", accessToken);
-      await AsyncStorage.setItem("hazina.refreshToken", refreshToken);
-      await AsyncStorage.setItem("hazina.user", JSON.stringify(user));
-      if (!user.fullName || user.fullName === "User") {
-        navigation.replace("Onboarding");
-      } else {
-        navigation.replace("MainTabs");
-      }
-    } catch (error: any) {
-      setErrorMessage(
-        error.response?.data?.error ||
-          error.message ||
-          "Invalid code. Please try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+function SignInView({
+  onSendOtp,
+  onCreateAccount,
+}: {
+  onSendOtp: (phone: string) => void;
+  onCreateAccount: () => void;
+}) {
+  const [phone, setPhone] = useState("");
+  const [focused, setFocused] = useState(false);
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <>
+      {/* Taller hero — more breathing room for the logo */}
+      <View style={S.hero}>
+        <HeroCircles />
+        <View style={S.heroContent}>
+          <HazinaLogo size={34} />
+          <Text style={S.heroTagline}>Your group's financial home</Text>
+          <Text style={S.heroSub}>
+            Manage contributions, track savings, and unlock bank loans — together.
+          </Text>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={S.content}>
+        <Text style={S.contentTitle}>Welcome back</Text>
+        <Text style={S.contentSub}>Sign in with your phone number</Text>
+
+        <Text style={S.fieldLabel}>PHONE NUMBER</Text>
+        <PhoneInput
+          value={phone}
+          onChangeText={setPhone}
+          focused={focused}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+
+        <TouchableOpacity
+          style={[S.btnPrimary, !phone && S.btnDisabled]}
+          onPress={() => phone && onSendOtp(phone)}
+          activeOpacity={0.85}
+        >
+          <Text style={S.btnPrimaryText}>Send OTP code</Text>
+          <Feather name="arrow-right" size={18} color="#fff" />
+        </TouchableOpacity>
+
+        <View style={S.dividerRow}>
+          <View style={S.dividerLine} />
+          <Text style={S.dividerText}>New to Hazina?</Text>
+          <View style={S.dividerLine} />
+        </View>
+
+        <TouchableOpacity style={S.btnSecondary} onPress={onCreateAccount} activeOpacity={0.85}>
+          <Text style={S.btnSecondaryText}>Create an account</Text>
+        </TouchableOpacity>
+
+        <Text style={S.terms}>
+          By continuing you agree to our{" "}
+          <Text style={S.termsLink}>Terms</Text> and{" "}
+          <Text style={S.termsLink}>Privacy Policy</Text>
+        </Text>
+      </View>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  OTP view
+// ─────────────────────────────────────────────────────────────────────────────
+
+function OtpView({
+  phone,
+  onVerify,
+  onBack,
+}: {
+  phone: string;
+  onVerify: () => void;
+  onBack: () => void;
+}) {
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [resendSecs, setResendSecs] = useState(42);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const refs = Array.from({ length: 6 }, () => useRef<TextInput>(null));
+  const complete = digits.every((d) => d !== "");
+
+  useEffect(() => {
+    if (resendSecs <= 0) return;
+    const t = setTimeout(() => setResendSecs((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendSecs]);
+
+  const handleChange = (text: string, idx: number) => {
+    const next = [...digits];
+    next[idx] = text;
+    setDigits(next);
+    if (text && idx < 5) { refs[idx + 1].current?.focus(); setFocusedIndex(idx + 1); }
+    if (!text && idx > 0) { refs[idx - 1].current?.focus(); setFocusedIndex(idx - 1); }
+  };
+
+  const formatted = "+254 " + phone.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
+
+  return (
+    <>
+      {/* Shorter hero for OTP */}
+      <View style={[S.hero, S.heroShort]}>
+        <HeroCircles />
+        <Pressable onPress={onBack} style={S.backBtn} hitSlop={12}>
+          <Feather name="chevron-left" size={18} color="#fff" />
+        </Pressable>
+        <View style={{ marginTop: 10 }}>
+          <HazinaLogo size={24} />
+        </View>
+        <Text style={S.heroTaglineCompact}>Verify your number</Text>
+        <Text style={S.heroSub}>Code sent to {formatted}</Text>
+      </View>
+
+      {/* Content */}
+      <View style={S.content}>
+        <Text style={S.contentTitle}>Enter OTP</Text>
+        <Text style={S.contentSub}>Check your SMS for a 6-digit code</Text>
+
+        {/* 6 square boxes — ample padding, equal width */}
+        <View style={S.otpRow}>
+          {digits.map((d, i) => (
+            <TextInput
+              key={i}
+              ref={refs[i] as React.RefObject<TextInput>}
+              style={[
+                S.otpBox,
+                d        ? S.otpBoxFilled  : null,
+                focusedIndex === i ? S.otpBoxActive  : null,
+              ]}
+              value={d}
+              onChangeText={(t) => handleChange(t, i)}
+              maxLength={1}
+              keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              selectTextOnFocus
+              onFocus={() => setFocusedIndex(i)}
+            />
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[S.btnPrimary, !complete && S.btnDisabled]}
+          onPress={complete ? onVerify : undefined}
+          activeOpacity={0.85}
+        >
+          <Text style={S.btnPrimaryText}>Verify</Text>
+        </TouchableOpacity>
+
+        <Text style={S.resendRow}>
+          Didn't receive a code?{" "}
+          {resendSecs > 0 ? (
+            <Text style={S.resendMuted}>
+              Resend in 0:{String(resendSecs).padStart(2, "0")}
+            </Text>
+          ) : (
+            <Text style={S.resendLink} onPress={() => setResendSecs(42)}>
+              Resend now
+            </Text>
+          )}
+        </Text>
+      </View>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Screen
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function AuthScreen({ navigation }: any) {
+  const [step, setStep] = useState<"signin" | "otp">("signin");
+  const [phone, setPhone] = useState("");
+
+  return (
+    <SafeAreaView style={S.screen}>
       <StatusBar style="light" />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero Section ── */}
-          <View style={styles.hero}>
-            {/* Decorative blobs */}
-            <View style={styles.blobTopRight} />
-            <View style={styles.blobBottomLeft} />
-
-            {/* Logo mark */}
-            <View style={styles.logoMark}>
-              <Text style={styles.logoMarkText}>H</Text>
-            </View>
-
-            <Text style={styles.brandName}>HAZINA</Text>
-            <Text style={styles.heroTitle}>
-              Your chama,{"\n"}under control.
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              Contributions · MGR cycles · Group loans{"\n"}Built for Kenyan
-              savings groups.
-            </Text>
-
-            {/* Feature pills */}
-            <View style={styles.pillsRow}>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>📱 M-Pesa</Text>
-              </View>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>🏦 Group loans</Text>
-              </View>
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>📊 Credit score</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* ── Card Section ── */}
-          <View style={styles.card}>
-            {step === "phone" ? (
-              <>
-                <Text style={styles.cardTitle}>Get started</Text>
-                <Text style={styles.cardSubtitle}>
-                  Enter your Kenyan phone number to sign in or create an
-                  account.
-                </Text>
-
-                {/* Phone input */}
-                <View style={styles.phoneInputWrapper}>
-                  <View style={styles.countryFlag}>
-                    <Text style={styles.countryFlagText}>🇰🇪</Text>
-                    <Text style={styles.countryCode}>+254</Text>
-                  </View>
-                  <TextInput
-                    value={phoneNumber}
-                    onChangeText={(t) => {
-                      setPhoneNumber(t);
-                      setErrorMessage("");
-                    }}
-                    placeholder="7XX XXX XXX"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="phone-pad"
-                    style={styles.phoneInput}
-                    maxLength={15}
-                  />
-                </View>
-
-                {errorMessage ? (
-                  <View style={styles.errorBox}>
-                    <Text style={styles.errorBoxText}>⚠ {errorMessage}</Text>
-                  </View>
-                ) : null}
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.primaryBtn,
-                    (!isPhoneValid || loading) && styles.primaryBtnDisabled,
-                    pressed && isPhoneValid && { opacity: 0.88 },
-                  ]}
-                  onPress={handleRequestOtp}
-                  disabled={!isPhoneValid || loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.primaryBtnText}>
-                      Send verification code →
-                    </Text>
-                  )}
-                </Pressable>
-
-                <Text style={styles.termsText}>
-                  By continuing you agree to our Terms of Service and Privacy
-                  Policy.
-                </Text>
-              </>
-            ) : (
-              <>
-                {/* OTP Step */}
-                <Pressable
-                  onPress={() => {
-                    setStep("phone");
-                    setOtpCode("");
-                    setErrorMessage("");
-                  }}
-                  style={styles.backLink}
-                >
-                  <Text style={styles.backLinkText}>← Change number</Text>
-                </Pressable>
-
-                <Text style={styles.cardTitle}>Check your phone</Text>
-                <Text style={styles.cardSubtitle}>
-                  We sent a 6-digit code to{" "}
-                  <Text style={styles.cardSubtitleBold}>{submittedPhone}</Text>
-                </Text>
-
-                {devOtpHint ? (
-                  <View style={styles.devHintBox}>
-                    <Text style={styles.devHintText}>
-                      🔧 Dev code: {devOtpHint}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {/* OTP boxes */}
-                <View style={styles.otpWrapper}>
-                  <TextInput
-                    value={otpCode}
-                    onChangeText={(t) => {
-                      setOtpCode(t.replace(/\D/g, ""));
-                      setErrorMessage("");
-                    }}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    style={styles.otpInput}
-                    placeholder="──────"
-                    placeholderTextColor="#D1D5DB"
-                    textAlign="center"
-                  />
-                </View>
-
-                {errorMessage ? (
-                  <View style={styles.errorBox}>
-                    <Text style={styles.errorBoxText}>⚠ {errorMessage}</Text>
-                  </View>
-                ) : null}
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.primaryBtn,
-                    (otpCode.trim().length !== 6 || loading) &&
-                      styles.primaryBtnDisabled,
-                    pressed && otpCode.trim().length === 6 && { opacity: 0.88 },
-                  ]}
-                  onPress={handleVerifyOtp}
-                  disabled={otpCode.trim().length !== 6 || loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.primaryBtnText}>Verify & enter →</Text>
-                  )}
-                </Pressable>
-
-                <Pressable onPress={handleRequestOtp} style={styles.resendLink}>
-                  <Text style={styles.resendLinkText}>
-                    Didn't get a code? Resend
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </View>
-
-          {/* ── Demo bypass ── */}
-          <View style={styles.demoSection}>
-            <View style={styles.demoDividerRow}>
-              <View style={styles.demoDivider} />
-              <Text style={styles.demoDividerText}>or try the demo</Text>
-              <View style={styles.demoDivider} />
-            </View>
-            <Pressable style={styles.demoBtn} onPress={handleMockLogin}>
-              <Text style={styles.demoBtnText}>🚀 Enter demo as Wanjiru</Text>
-            </Pressable>
-          </View>
+          {step === "signin" ? (
+            <SignInView
+              onSendOtp={(p) => { setPhone(p); setStep("otp"); }}
+              onCreateAccount={() => navigation.navigate("Onboarding")}
+            />
+          ) : (
+            <OtpView
+              phone={phone}
+              onVerify={() => navigation.replace("Onboarding")}
+              onBack={() => setStep("signin")}
+            />
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.surfaceDark,
+// ─────────────────────────────────────────────────────────────────────────────
+//  Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+const S = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: Colors.primary },
+
+  // ── Hero — TALL for sign-in, shorter for OTP ─────────────────────────────
+  hero: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing[6],
+    paddingTop: 60,           // extra top room
+    paddingBottom: 44,        // extra bottom room before the white card
+    overflow: "hidden",
+    minHeight: 260,           // taller than before
   },
-  scroll: {
-    flexGrow: 1,
+  heroShort: {
+    paddingTop: 44,
+    paddingBottom: 28,
+    minHeight: 180,
+  },
+
+  heroContent: {
+    gap: 8,
+    marginTop: 16,
+  },
+
+  circleTopRight: {
+    position: "absolute", width: 240, height: 240, borderRadius: 120,
+    backgroundColor: "rgba(255,255,255,0.05)", top: -70, right: -70,
+  },
+  circleBottomLeft: {
+    position: "absolute", width: 180, height: 180, borderRadius: 90,
+    backgroundColor: "rgba(245,158,11,0.10)", bottom: -60, left: -50,
+  },
+
+  logo: {
+    fontFamily: FontFamily.extraBold,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+  heroTagline: {
+    fontFamily: FontFamily.heading,
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  heroTaglineCompact: {
+    fontFamily: FontFamily.heading,
+    fontSize: 18,
+    color: "#FFFFFF",
+    fontWeight: "700",
+    marginTop: 8,
+  },
+  heroSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.65)",
+    lineHeight: 19,
+  },
+
+  backBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
+  },
+
+  // ── White content area ───────────────────────────────────────────────────
+  content: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: Spacing[6],
+    paddingTop: Spacing[6],
     paddingBottom: Spacing[10],
   },
 
-  // ── Hero ──
-  hero: {
-    backgroundColor: Colors.surfaceDark,
-    paddingHorizontal: Spacing[7],
-    paddingTop: Spacing[12],
-    paddingBottom: Spacing[11],
-    position: "relative",
-    overflow: "hidden",
-  },
-  blobTopRight: {
-    position: "absolute",
-    top: -60,
-    right: -60,
-    width: 220,
-    height: 220,
-    borderRadius: Radius.full,
-    backgroundColor: "#0E7C66",
-    opacity: 0.25,
-  },
-  blobBottomLeft: {
-    position: "absolute",
-    bottom: -40,
-    left: -40,
-    width: 180,
-    height: 180,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.accent,
-    opacity: 0.12,
-  },
-
-  logoMark: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[5],
-    ...Shadow.fab,
-  },
-  logoMarkText: {
-    color: Colors.textInverse,
-    fontSize: FontSize["5xl"],
+  contentTitle: {
     fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-
-  brandName: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 3,
-    marginBottom: Spacing[3],
-  },
-  heroTitle: {
-    color: Colors.primaryLight,
-    fontSize: FontSize["7xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    lineHeight: 46,
-    marginBottom: 14,
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.base,
-    lineHeight: 22,
-    fontFamily: FontFamily.medium,
-    fontWeight: FontWeight.medium,
-    marginBottom: Spacing[7],
-    opacity: 0.85,
-  },
-
-  pillsRow: {
-    flexDirection: "row",
-    gap: Spacing[2],
-    flexWrap: "wrap",
-  },
-  pill: {
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(110,231,183,0.2)",
-    paddingHorizontal: Spacing[3],
-    paddingVertical: 7,
-    borderRadius: Radius.full,
-  },
-  pillText: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xxs,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-
-  // ── Card ──
-  card: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.hero,
-    borderTopRightRadius: Radius.hero,
-    marginTop: -16,
-    paddingHorizontal: Spacing[7],
-    paddingTop: Spacing[9],
-    paddingBottom: Spacing[8],
-    ...Shadow.heroCard,
-    minHeight: 380,
-  },
-
-  backLink: {
-    marginBottom: Spacing[4],
-  },
-  backLinkText: {
-    color: Colors.primary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  cardTitle: {
+    fontSize: 20,
     color: Colors.textPrimary,
-    fontSize: FontSize["5xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[2],
-    letterSpacing: -0.3,
+    fontWeight: "800",
+    marginBottom: 4,
   },
-  cardSubtitle: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.md,
-    lineHeight: 22,
-    marginBottom: Spacing[7],
-  },
-  cardSubtitleBold: {
-    color: Colors.textPrimary,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  // Phone input
-  phoneInputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.background,
-    marginBottom: Spacing[4],
-    overflow: "hidden",
-  },
-  countryFlag: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing[3.5],
-    paddingVertical: Spacing[4],
-    borderRightWidth: 1.5,
-    borderRightColor: Colors.border,
-    gap: Spacing[1.5],
-    backgroundColor: Colors.divider,
-  },
-  countryFlagText: { fontSize: FontSize["3xl"] },
-  countryCode: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-  phoneInput: {
-    flex: 1,
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[4],
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-    color: Colors.textPrimary,
-  },
-
-  // OTP input
-  otpWrapper: {
-    marginBottom: Spacing[4],
-  },
-  otpInput: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.background,
-    paddingVertical: Spacing[5],
-    fontSize: FontSize["5xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-    letterSpacing: 14,
-  },
-
-  // Error box
-  errorBox: {
-    backgroundColor: Colors.errorBg,
-    borderRadius: Radius.input,
-    borderWidth: 1,
-    borderColor: Colors.errorLight,
-    paddingHorizontal: Spacing[3.5],
-    paddingVertical: Spacing[2.5],
-    marginBottom: Spacing[4],
-  },
-  errorBoxText: {
-    color: Colors.errorDark,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-
-  // Dev hint
-  devHintBox: {
-    backgroundColor: Colors.accentTint,
-    borderRadius: Radius.badge,
-    borderWidth: 1,
-    borderColor: Colors.warningLight,
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[2],
-    marginBottom: Spacing[4],
-  },
-  devHintText: {
-    color: Colors.warningDark,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  // Primary button
-  primaryBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing[4.5],
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[4],
-    ...Shadow.fab,
-    minHeight: 56,
-  },
-  primaryBtnDisabled: {
-    backgroundColor: Colors.borderStrong,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  primaryBtnText: {
-    color: Colors.textInverse,
-    fontSize: FontSize.lg,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 0.2,
-  },
-
-  termsText: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xxs,
+  contentSub: {
     fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-    textAlign: "center",
-    lineHeight: 18,
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginBottom: 24,
   },
 
-  resendLink: {
-    alignItems: "center",
-    paddingVertical: Spacing[1],
-  },
-  resendLinkText: {
-    color: Colors.primary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  // ── Demo section ──
-  demoSection: {
-    backgroundColor: Colors.surfaceDark,
-    paddingHorizontal: Spacing[7],
-    paddingTop: Spacing[6],
-    paddingBottom: Spacing[2],
-  },
-  demoDividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing[3],
-    marginBottom: Spacing[4],
-  },
-  demoDivider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
-  demoDividerText: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xxs,
+  fieldLabel: {
     fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-    opacity: 0.7,
+    fontSize: 10,
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 7,
   },
-  demoBtn: {
-    borderRadius: Radius.lg,
+
+  // ── Phone input ─────────────────────────────────────────────────────────
+  phoneRow: {
+    flexDirection: "row", alignItems: "center",
+    borderRadius: Radius.badge, borderWidth: 1,
+    paddingHorizontal: Spacing[4], height: 52,
+    marginBottom: Spacing[5],
+  },
+  phoneRowBlur:    { backgroundColor: "#F6F9F7", borderColor: "#EBF1EF" },
+  phoneRowFocused: { backgroundColor: "#E8F7F4", borderColor: Colors.primary },
+  prefix:      { fontFamily: FontFamily.medium, fontSize: FontSize.base, color: Colors.textPrimary, marginRight: Spacing[3] },
+  phoneDivider:{ width: 1, height: 20, backgroundColor: "#EBF1EF", marginRight: Spacing[3] },
+  phoneInput:  { flex: 1, fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textPrimary },
+
+  // ── OTP boxes — square, roomy ────────────────────────────────────────────
+  otpRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: Spacing[6],
+    marginTop: 8,
+  },
+  otpBox: {
+    flex: 1,
+    aspectRatio: 1,           // makes each box square
+    borderRadius: Radius.badge,
     borderWidth: 1.5,
-    borderColor: "rgba(110,231,183,0.3)",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    paddingVertical: Spacing[4],
-    alignItems: "center",
+    borderColor: "#EBF1EF",
+    backgroundColor: "#F6F9F7",
+    textAlign: "center",
+    fontFamily: FontFamily.heading,
+    fontSize: 22,
+    color: Colors.textPrimary,
+    paddingVertical: 0,       // override system vertical padding so square stays
   },
-  demoBtnText: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
+  otpBoxFilled: {
+    borderColor: Colors.primary,
+    backgroundColor: "#E8F7F4",
+    color: Colors.primary,
   },
+  otpBoxActive: {
+    borderColor: Colors.primary,
+    borderWidth: 2,
+  },
+
+  // ── Buttons ─────────────────────────────────────────────────────────────
+  btnPrimary: {
+    backgroundColor: Colors.primary, borderRadius: Radius.button,
+    height: 52, flexDirection: "row", alignItems: "center",
+    justifyContent: "center", gap: 8, marginBottom: Spacing[5],
+  },
+  btnPrimaryText: { fontFamily: FontFamily.heading, fontSize: 16, color: "#FFFFFF", fontWeight: "700" },
+  btnDisabled: { opacity: 0.42 },
+
+  dividerRow:  { flexDirection: "row", alignItems: "center", gap: Spacing[3], marginBottom: Spacing[4] },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#EBF1EF" },
+  dividerText: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted },
+
+  btnSecondary: {
+    borderRadius: Radius.button, height: 52, borderWidth: 1.5,
+    borderColor: "#EBF1EF", alignItems: "center", justifyContent: "center", marginBottom: Spacing[6],
+  },
+  btnSecondaryText: { fontFamily: FontFamily.heading, fontSize: 15, color: Colors.textPrimary, fontWeight: "700" },
+
+  terms:     { fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, textAlign: "center", lineHeight: 16 },
+  termsLink: { color: Colors.primary, fontFamily: FontFamily.semiBold },
+
+  resendRow:   { textAlign: "center", fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textMuted, marginTop: 16 },
+  resendMuted: { color: Colors.textMuted, fontFamily: FontFamily.medium },
+  resendLink:  { color: Colors.primary, fontFamily: FontFamily.semiBold },
 });

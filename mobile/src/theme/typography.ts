@@ -1,33 +1,41 @@
 /**
  * ─────────────────────────────────────────────────────────────
- *  HAZINA — Typography Tokens
+ *  HAZINA — Typography Tokens  (Bold Earth identity)
  *
- *  Font family: Plus Jakarta Sans
+ *  Headings / numbers: Sora (700, 800)
+ *  Body / labels:      DM Sans (400, 500, 600, 700)
  *  Loaded via expo-font in App.tsx.
  *  Fall-backs: System (SF Pro on iOS, Roboto on Android).
  *
  *  Usage:
  *    import { Typography, FontFamily, FontSize } from '@/theme/typography';
  *    style={Typography.h1}
- *    style={{ fontSize: FontSize.lg, fontWeight: FontWeight.bold }}
+ *    style={{ fontSize: FontSize.lg, fontFamily: FontFamily.heading }}
  * ─────────────────────────────────────────────────────────────
  */
 
 import { Platform, type TextStyle } from "react-native";
 
 // ─── Font Families ────────────────────────────────────────────────────────────
+// Sora  → headings, large numerics, logo
+// DM Sans → body copy, labels, captions, badges
 
 export const FontFamily = {
-  /** Regular (400) */
-  regular:      "PlusJakartaSans_400Regular",
-  /** Medium (500) */
-  medium:       "PlusJakartaSans_500Medium",
-  /** SemiBold (600) */
-  semiBold:     "PlusJakartaSans_600SemiBold",
-  /** Bold (700) */
-  bold:         "PlusJakartaSans_700Bold",
-  /** ExtraBold (800) */
-  extraBold:    "PlusJakartaSans_800ExtraBold",
+  // ── DM Sans — body & labels ──────────────────────────────
+  /** DM Sans Regular (400) — body copy, placeholders */
+  regular:      "DMSans_400Regular",
+  /** DM Sans Medium (500) — supporting body, form labels */
+  medium:       "DMSans_500Medium",
+  /** DM Sans SemiBold (600) — tab labels, secondary buttons */
+  semiBold:     "DMSans_600SemiBold",
+  /** DM Sans Bold (700) — strong labels, badges */
+  bold:         "DMSans_700Bold",
+
+  // ── Sora — headings & numbers ─────────────────────────────
+  /** Sora Bold (700) — card titles, section headers */
+  heading:      "Sora_700Bold",
+  /** Sora ExtraBold (800) — screen titles, large numerics, logo */
+  extraBold:    "Sora_800ExtraBold",
 
   // System fallbacks (used before fonts load)
   systemRegular:  Platform.OS === "ios" ? "System" : "Roboto",

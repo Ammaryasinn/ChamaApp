@@ -1,425 +1,163 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  Pressable,
+  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  TouchableOpacity,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
-import {
-  Colors,
-  FontFamily,
-  FontSize,
-  FontWeight,
-  Radius,
-  Shadow,
-  Spacing,
-} from "../theme";
+import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
+
+function HeroCircles() {
+  return (
+    <>
+      <View style={S.cTR} />
+      <View style={S.cBL} />
+    </>
+  );
+}
+
+interface MenuItem { icon: React.ComponentProps<typeof Feather>["name"]; label: string; sub: string; badge?: string; onPress: () => void; }
+
+function MenuRow({ item }: { item: MenuItem }) {
+  return (
+    <TouchableOpacity style={S.menuRow} onPress={item.onPress} activeOpacity={0.7}>
+      <View style={S.menuIcon}>
+        <Feather name={item.icon} size={20} color={Colors.primary} />
+      </View>
+      <View style={S.menuMeta}>
+        <Text style={S.menuLabel}>{item.label}</Text>
+        <Text style={S.menuSub}>{item.sub}</Text>
+      </View>
+      {item.badge ? (
+        <View style={S.proBadge}><Text style={S.proBadgeText}>{item.badge}</Text></View>
+      ) : (
+        <Feather name="chevron-right" size={16} color={Colors.textMuted} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={S.sectionHeader}>{title}</Text>;
+}
 
 export default function ProfileScreen({ navigation }: any) {
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    AsyncStorage.getItem("hazina.user").then((val) => {
-      if (val) setUser(JSON.parse(val));
-    });
-  }, []);
-
-  const handleSignOut = async () => {
-    await AsyncStorage.clear();
-    navigation.replace("Auth");
-  };
-
-  const avatarLetter = user?.fullName ? user.fullName[0].toUpperCase() : "U";
-  const initials = user?.fullName
-    ? user.fullName
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "U";
-
-  const canGoBack = navigation.canGoBack();
+  const MENU: { section: string; items: MenuItem[] }[] = [
+    {
+      section: "MY CHAMAS",
+      items: [
+        { icon: "users",      label: "Invite members",    sub: "Add people to your chama",        onPress: () => navigation.navigate("InviteMembers") },
+        { icon: "file-text",  label: "Meeting minutes",   sub: "Record and view decisions",        onPress: () => {} },
+      ],
+    },
+    {
+      section: "REPORTS",
+      items: [
+        { icon: "bar-chart-2", label: "Annual report", sub: "Download PDF · 2025", badge: "PRO", onPress: () => {} },
+      ],
+    },
+    {
+      section: "MARKETPLACE",
+      items: [
+        { icon: "shopping-bag", label: "Group purchases", sub: "Samsung, Ramtons deals", onPress: () => {} },
+      ],
+    },
+    {
+      section: "ACCOUNT",
+      items: [
+        { icon: "settings", label: "Settings", sub: "Profile, notifications", onPress: () => {} },
+      ],
+    },
+  ];
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={S.screen}>
+      <StatusBar style="light" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        {canGoBack ? (
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backBtn}
-            hitSlop={12}
-          >
-            <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
-          </Pressable>
-        ) : (
-          <View style={styles.backBtnPlaceholder} />
-        )}
-        <Text style={styles.headerTitle}>Profile</Text>
-        <View style={styles.backBtnPlaceholder} />
+      {/* Hero */}
+      <View style={S.hero}>
+        <HeroCircles />
+        <Text style={S.loggedAs}>Logged in as</Text>
+        <View style={S.profileRow}>
+          <View style={S.avatar}>
+            <Text style={S.avatarText}>WK</Text>
+          </View>
+          <View>
+            <Text style={S.profileName}>Wanjiru Kamau</Text>
+            <Text style={S.profileSub}>Chairperson · 2 chamas</Text>
+          </View>
+        </View>
+
+        {/* Score + upgrade row */}
+        <View style={S.scoreCard}>
+          <View style={S.scoreLeft}>
+            <Text style={S.scoreLabel}>Hazina Score</Text>
+            <Text style={S.scoreNum}>742</Text>
+          </View>
+          <View style={S.scoreRight}>
+            <Text style={S.freeTier}>Free tier</Text>
+            <TouchableOpacity
+              style={S.upgradeBtn}
+              onPress={() => navigation.navigate("PremiumSubscription")}
+              activeOpacity={0.85}
+            >
+              <Text style={S.upgradeBtnText}>Upgrade</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Avatar + Name */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials}</Text>
+      {/* Menu */}
+      <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
+        {MENU.map((section) => (
+          <View key={section.section}>
+            <SectionHeader title={section.section} />
+            <View style={S.menuCard}>
+              {section.items.map((item, i) => (
+                <View key={i}>
+                  <MenuRow item={item} />
+                  {i < section.items.length - 1 && <View style={S.sep} />}
+                </View>
+              ))}
+            </View>
           </View>
-          <Text style={styles.userName}>{user?.fullName || "Hazina User"}</Text>
-          <Text style={styles.userPhone}>{user?.phoneNumber || ""}</Text>
-          <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedText}>✓ Verified Member</Text>
-          </View>
-        </View>
-
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>1</Text>
-            <Text style={styles.statLabel}>Active Chama</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>742</Text>
-            <Text style={styles.statLabel}>Credit Score</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>14</Text>
-            <Text style={styles.statLabel}>Months Active</Text>
-          </View>
-        </View>
-
-        {/* Credit Score CTA */}
-        <Pressable
-          style={styles.creditCard}
-          onPress={() => navigation.navigate("MemberCreditProfile")}
-        >
-          <View style={styles.creditCardLeft}>
-            <Text style={styles.creditCardTitle}>Hazina Credit Score</Text>
-            <Text style={styles.creditCardScore}>742</Text>
-            <Text style={styles.creditCardDesc}>
-              Good standing · Updated 2h ago
-            </Text>
-          </View>
-          <View style={styles.creditCardRight}>
-            <Text style={styles.creditCardArrow}>›</Text>
-          </View>
-        </Pressable>
-
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <Text style={styles.menuSectionTitle}>ACCOUNT</Text>
-
-          <View style={styles.menuCard}>
-            <Pressable style={styles.menuRow}>
-              <Text style={styles.menuIcon}>👤</Text>
-              <Text style={styles.menuLabel}>Edit Profile</Text>
-              <Text style={styles.menuChevron}>›</Text>
-            </Pressable>
-            <View style={styles.menuDivider} />
-            <Pressable style={styles.menuRow}>
-              <Text style={styles.menuIcon}>🔔</Text>
-              <Text style={styles.menuLabel}>Notifications</Text>
-              <Text style={styles.menuChevron}>›</Text>
-            </Pressable>
-            <View style={styles.menuDivider} />
-            <Pressable style={styles.menuRow}>
-              <Text style={styles.menuIcon}>🔒</Text>
-              <Text style={styles.menuLabel}>Security & PIN</Text>
-              <Text style={styles.menuChevron}>›</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.menuSection}>
-          <Text style={styles.menuSectionTitle}>CHAMA</Text>
-
-          <View style={styles.menuCard}>
-            <Pressable
-              style={styles.menuRow}
-              onPress={() => navigation.navigate("PremiumSubscription")}
-            >
-              <Text style={styles.menuIcon}>⭐</Text>
-              <Text style={styles.menuLabel}>Upgrade to Premium</Text>
-              <View style={styles.premiumBadge}>
-                <Text style={styles.premiumBadgeText}>FREE</Text>
-              </View>
-              <Text style={styles.menuChevron}>›</Text>
-            </Pressable>
-            <View style={styles.menuDivider} />
-            <Pressable style={styles.menuRow}>
-              <Text style={styles.menuIcon}>📊</Text>
-              <Text style={styles.menuLabel}>Transaction History</Text>
-              <Text style={styles.menuChevron}>›</Text>
-            </Pressable>
-            <View style={styles.menuDivider} />
-            <Pressable style={styles.menuRow}>
-              <Text style={styles.menuIcon}>❓</Text>
-              <Text style={styles.menuLabel}>Help & Support</Text>
-              <Text style={styles.menuChevron}>›</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Sign Out */}
-        <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Log out of Hazina</Text>
-        </Pressable>
-
-        <Text style={styles.versionText}>Hazina v1.0.0</Text>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
+const S = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: Colors.primary },
+  cTR: { position: "absolute", width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.05)", top: -50, right: -50 },
+  cBL: { position: "absolute", width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(245,158,11,0.10)", bottom: -40, left: -30 },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[4],
-    paddingBottom: Spacing[3],
-    backgroundColor: Colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.divider,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backBtnPlaceholder: {
-    width: 38,
-    height: 38,
-  },
-  headerTitle: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["2xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    textAlign: "center",
-    flex: 1,
-  },
+  hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 44, paddingBottom: 20, overflow: "hidden", gap: 8 },
+  loggedAs: { fontFamily: FontFamily.regular, fontSize: 11, color: "rgba(255,255,255,0.55)" },
+  profileRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#2E9E87", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.3)" },
+  avatarText: { fontFamily: FontFamily.heading, fontSize: 16, color: "#FFFFFF", fontWeight: "700" },
+  profileName: { fontFamily: FontFamily.extraBold, fontSize: 18, color: "#FFFFFF", fontWeight: "800" },
+  profileSub:  { fontFamily: FontFamily.regular, fontSize: 12, color: "rgba(255,255,255,0.65)" },
 
-  content: {
-    paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[7],
-    paddingBottom: Spacing[12],
-  },
+  scoreCard: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 12, padding: 12, marginTop: 4 },
+  scoreLeft: { flex: 1 },
+  scoreRight: { alignItems: "flex-end", gap: 6 },
+  scoreLabel: { fontFamily: FontFamily.medium, fontSize: 11, color: "rgba(255,255,255,0.6)" },
+  scoreNum:   { fontFamily: FontFamily.extraBold, fontSize: 28, color: "#F59E0B", fontWeight: "800" },
+  freeTier:   { fontFamily: FontFamily.regular, fontSize: 11, color: "rgba(255,255,255,0.55)" },
+  upgradeBtn: { backgroundColor: "#F59E0B", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  upgradeBtnText: { fontFamily: FontFamily.heading, fontSize: 12, color: "#FFFFFF", fontWeight: "700" },
 
-  // Avatar
-  avatarSection: { alignItems: "center", marginBottom: Spacing[7] },
-  avatarCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing[3.5],
-    ...Shadow.fab,
-  },
-  avatarText: {
-    color: Colors.textInverse,
-    fontSize: FontSize["6xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-  userName: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[1],
-  },
-  userPhone: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.medium,
-    fontWeight: FontWeight.medium,
-    marginBottom: Spacing[2.5],
-  },
-  verifiedBadge: {
-    backgroundColor: Colors.successBg,
-    borderWidth: 1,
-    borderColor: Colors.successLight,
-    paddingHorizontal: Spacing[3],
-    paddingVertical: 5,
-    borderRadius: Radius.full,
-  },
-  verifiedText: {
-    color: Colors.successDark,
-    fontSize: FontSize.xxs,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: "row",
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.card,
-    padding: Spacing[5],
-    marginBottom: Spacing[4],
-    ...Shadow.sm,
-  },
-  statBox: { flex: 1, alignItems: "center" },
-  statValue: {
-    color: Colors.textPrimary,
-    fontSize: FontSize["3xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    marginBottom: Spacing[1],
-  },
-  statLabel: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-    textAlign: "center",
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.divider,
-    marginVertical: Spacing[1],
-  },
-
-  // Credit card
-  creditCard: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.card,
-    padding: Spacing[5],
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing[7],
-  },
-  creditCardLeft: { flex: 1 },
-  creditCardTitle: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.xxs,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-    letterSpacing: 0.5,
-    marginBottom: Spacing[1.5],
-  },
-  creditCardScore: {
-    color: Colors.textInverse,
-    fontSize: FontSize["7xl"],
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    lineHeight: 40,
-    marginBottom: Spacing[1],
-  },
-  creditCardDesc: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    fontWeight: FontWeight.regular,
-  },
-  creditCardRight: { paddingLeft: Spacing[3] },
-  creditCardArrow: {
-    color: Colors.textInverseSoft,
-    fontSize: FontSize["5xl"],
-  },
-
-  // Menu
-  menuSection: { marginBottom: Spacing[5] },
-  menuSectionTitle: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    marginBottom: Spacing[2.5],
-    marginLeft: Spacing[1],
-  },
-  menuCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.card,
-    overflow: "hidden",
-    ...Shadow.xs,
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[4],
-  },
-  menuIcon: {
-    fontSize: FontSize["2xl"],
-    marginRight: Spacing[3.5],
-    width: 28,
-    textAlign: "center",
-  },
-  menuLabel: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.semiBold,
-    fontWeight: FontWeight.semiBold,
-  },
-  menuChevron: { color: Colors.textMuted, fontSize: FontSize["3xl"] },
-  menuDivider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginLeft: 58,
-  },
-
-  premiumBadge: {
-    backgroundColor: Colors.accentLight,
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 3,
-    borderRadius: Radius.md,
-    marginRight: Spacing[2],
-  },
-  premiumBadgeText: {
-    color: Colors.warningDark,
-    fontSize: FontSize.micro,
-    fontFamily: FontFamily.extraBold,
-    fontWeight: FontWeight.extraBold,
-  },
-
-  // Sign out
-  signOutBtn: {
-    borderWidth: 1.5,
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentTint,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing[4],
-    alignItems: "center",
-    marginBottom: Spacing[4],
-    marginTop: Spacing[2],
-  },
-  signOutText: {
-    color: Colors.warningDark,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    fontWeight: FontWeight.bold,
-  },
-
-  versionText: {
-    color: Colors.borderStrong,
-    fontSize: FontSize.xxs,
-    textAlign: "center",
-    marginTop: Spacing[2],
-  },
+  scroll: { backgroundColor: "#F6F9F7", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
+  sectionHeader: { fontFamily: FontFamily.semiBold, fontSize: 10, color: Colors.textMuted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8, marginTop: 16 },
+  menuCard: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#EBF1EF", overflow: "hidden" },
+  menuRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+  menuIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#E8F7F4", alignItems: "center", justifyContent: "center" },
+  menuMeta: { flex: 1 },
+  menuLabel: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700" },
+  menuSub:   { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  proBadge: { backgroundColor: "#F59E0B", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3 },
+  proBadgeText: { fontFamily: FontFamily.heading, fontSize: 10, color: "#FFFFFF", fontWeight: "700" },
+  sep: { height: 1, backgroundColor: "#F6F9F7", marginHorizontal: 14 },
 });
