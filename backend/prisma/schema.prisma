@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChamaType {
+  merry_go_round
+  investment
+  welfare
+  hybrid
+}
+
+enum ContributionFrequency {
+  weekly
+  biweekly
+  monthly
+}
+
+enum ChamaStatus {
+  active
+  suspended
+  closed
+}
+
+enum MemberRole {
+  chairperson
+  treasurer
+  secretary
+  member
+}
+
+enum MemberStatus {
+  active
+  suspended
+  exited
+}
+
+enum CycleStatus {
+  upcoming
+  active
+  collecting
+  completed
+  failed
+}
+
+enum ContributionStatus {
+  pending
+  stk_sent
+  paid
+  partial
+  late
+  waived
+}
+
+enum TransactionType {
+  contribution
+  penalty
+  loan_disbursement
+  loan_repayment
+  mgr_payout
+  investment
+  withdrawal
+}
+
+enum TransactionDirection {
+  inbound
+  outbound
+}
+
+enum TransactionStatus {
+  pending
+  processing
+  completed
+  failed
+  reversed
+}
+
+enum LoanStatus {
+  pending_vote
+  approved
+  active
+  completed
+  defaulted
+  rejected
+}
+
+enum VoteChoice {
+  yes
+  no
+  abstain
+}
+
+enum ScheduleStatus {
+  upcoming
+  current
+  completed
+}
+
+enum SwapStatus {
+  pending
+  accepted
+  declined
+  expired
+  cancelled
+}
+
+enum BankLoanOfferStatus {
+  available
+  applied
+  approved
+  disbursed
+  expired
+}
+
+model User {
+  id                     String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phoneNumber            String          @unique @map("phone_number") @db.VarChar(15)
+  fullName               String          @map("full_name") @db.VarChar(100)
+  nationalId             String?         @map("national_id") @db.VarChar(20)
+  profilePhotoUrl        String?         @map("profile_photo_url")
+  isVerified             Boolean         @default(false) @map("is_verified")
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdChamas          Chama[]         @relation("ChamaCreator")
+  chamaMemberships       ChamaMember[]
+  transactions           Transaction[]
+  auditActions           AuditLog[]
+  creditScores           CreditScore[]
+  bankLoanOffers         BankLoanOffer[]
+
+  @@map("users")
+}
+
+model OtpCode {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phoneNumber String   @map("phone_number") @db.VarChar(15)
+  code        String   @db.VarChar(6)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([phoneNumber])
+  @@map("otp_codes")
+}
+
+model Chama {
+  id                       String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                     String                  @db.VarChar(100)
+  description              String?
+  chamaType                ChamaType               @map("chama_type")
+  mgrPercentage            Int                     @default(0) @map("mgr_percentage")
+  investmentPercentage     Int                     @default(0) @map("investment_percentage")
+  welfarePercentage        Int                     @default(0) @map("welfare_percentage")
+  contributionAmount       Decimal                 @map("contribution_amount") @db.Decimal(12, 2)
+  contributionFrequency    ContributionFrequency   @map("contribution_frequency")
+  meetingDay               Int?                    @map("meeting_day")
+  penaltyAmount            Decimal                 @default(0) @map("penalty_amount") @db.Decimal(12, 2)
+  penaltyGraceDays         Int                     @default(3) @map("penalty_grace_days")
+  maxLoanMultiplier        Decimal                 @default(3.0) @map("max_loan_multiplier") @db.Decimal(4, 2)
+  loanInterestRate         Decimal                 @default(10.0) @map("loan_interest_rate") @db.Decimal(5, 2)
+  minVotesToApproveLoan    Int                     @default(0) @map("min_votes_to_approve_loan")
+  mgrPotBalance            Decimal                 @default(0) @map("mgr_pot_balance") @db.Decimal(12, 2)
+  investmentFundBalance    Decimal                 @default(0) @map("investment_fund_balance") @db.Decimal(12, 2)
+  welfarePotBalance        Decimal                 @default(0) @map("welfare_pot_balance") @db.Decimal(12, 2)
+  createdBy                String                  @map("created_by") @db.Uuid
+  status                   ChamaStatus             @default(active)
+  createdAt                DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  creator                  User                    @relation("ChamaCreator", fields: [createdBy], references: [id])
+  members                  ChamaMember[]
+  contributionCycles       ContributionCycle[]
+  transactions             Transaction[]
+  loans                    Loan[]
+  mgrScheduleEntries       MgrSchedule[]
+  swapRequests             SwapRequest[]
+  auditLogs                AuditLog[]
+
+  @@map("chamas")
+}
+
+model ChamaMember {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId           String         @map("chama_id") @db.Uuid
+  userId            String         @map("user_id") @db.Uuid
+  role              MemberRole     @default(member)
+  joinedAt          DateTime       @default(now()) @map("joined_at") @db.Timestamptz(6)
+  status            MemberStatus   @default(active)
+  exitAt            DateTime?      @map("exit_at") @db.Timestamptz(6)
+  totalContributed  Decimal        @default(0) @map("total_contributed") @db.Decimal(12, 2)
+  chama             Chama          @relation(fields: [chamaId], references: [id])
+  user              User           @relation(fields: [userId], references: [id])
+  recipientCycles   ContributionCycle[] @relation("CycleRecipient")
+  contributions     Contribution[]
+  borrowedLoans     Loan[]         @relation("LoanBorrower")
+  loanVotes         LoanVote[]
+  mgrSchedule       MgrSchedule[]
+  requestedSwaps    SwapRequest[]  @relation("SwapRequester")
+  targetedSwaps     SwapRequest[]  @relation("SwapTarget")
+
+  @@unique([chamaId, userId])
+  @@map("chama_members")
+}
+
+model ContributionCycle {
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId           String               @map("chama_id") @db.Uuid
+  cycleNumber       Int                  @map("cycle_number")
+  startDate         DateTime             @map("start_date") @db.Date
+  dueDate           DateTime             @map("due_date") @db.Date
+  collectionDate    DateTime?            @map("collection_date") @db.Date
+  expectedAmount    Decimal              @map("expected_amount") @db.Decimal(12, 2)
+  collectedAmount   Decimal              @default(0) @map("collected_amount") @db.Decimal(12, 2)
+  status            CycleStatus          @default(upcoming)
+  mgrRecipientId    String?              @map("mgr_recipient_id") @db.Uuid
+  mgrPayoutAmount   Decimal?             @map("mgr_payout_amount") @db.Decimal(12, 2)
+  mgrPaidOut        Boolean              @default(false) @map("mgr_paid_out")
+  mgrPayoutDate     DateTime?            @map("mgr_payout_date") @db.Timestamptz(6)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  chama             Chama                @relation(fields: [chamaId], references: [id])
+  mgrRecipient      ChamaMember?         @relation("CycleRecipient", fields: [mgrRecipientId], references: [id])
+  contributions     Contribution[]
+
+  @@map("contribution_cycles")
+}
+
+model Contribution {
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cycleId          String             @map("cycle_id") @db.Uuid
+  chamaMemberId    String             @map("chama_member_id") @db.Uuid
+  expectedAmount   Decimal            @map("expected_amount") @db.Decimal(12, 2)
+  paidAmount       Decimal            @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  penaltyAmount    Decimal            @default(0) @map("penalty_amount") @db.Decimal(12, 2)
+  status           ContributionStatus @default(pending)
+  dueDate          DateTime           @map("due_date") @db.Date
+  paidAt           DateTime?          @map("paid_at") @db.Timestamptz(6)
+  stkSentAt        DateTime?          @map("stk_sent_at") @db.Timestamptz(6)
+  reminderCount    Int                @default(0) @map("reminder_count")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  cycle            ContributionCycle  @relation(fields: [cycleId], references: [id])
+  chamaMember      ChamaMember        @relation(fields: [chamaMemberId], references: [id])
+
+  @@map("contributions")
+}
+
+model Transaction {
+  id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId                String               @map("chama_id") @db.Uuid
+  userId                 String?              @map("user_id") @db.Uuid
+  transactionType        TransactionType      @map("transaction_type")
+  amount                 Decimal              @db.Decimal(12, 2)
+  direction              TransactionDirection
+  status                 TransactionStatus    @default(pending)
+  idempotencyKey         String               @unique @map("idempotency_key") @db.VarChar(100)
+  mpesaCheckoutRequestId String?              @map("mpesa_checkout_request_id") @db.VarChar(100)
+  mpesaReceiptNumber     String?              @map("mpesa_receipt_number") @db.VarChar(50)
+  mpesaPhoneNumber       String?              @map("mpesa_phone_number") @db.VarChar(15)
+  mpesaResultCode        Int?                 @map("mpesa_result_code")
+  mpesaResultDesc        String?              @map("mpesa_result_desc")
+  referenceId            String?              @map("reference_id") @db.Uuid
+  referenceType          String?              @map("reference_type") @db.VarChar(50)
+  description            String?
+  metadata               Json?
+  createdAt              DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  chama                  Chama                @relation(fields: [chamaId], references: [id])
+  user                   User?                @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
+}
+
+model Loan {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId           String       @map("chama_id") @db.Uuid
+  borrowerMemberId  String       @map("borrower_member_id") @db.Uuid
+  amount            Decimal      @db.Decimal(12, 2)
+  interestRate      Decimal      @map("interest_rate") @db.Decimal(5, 2)
+  repaymentMonths   Int          @map("repayment_months")
+  monthlyRepayment  Decimal      @map("monthly_repayment") @db.Decimal(12, 2)
+  totalRepayable    Decimal      @map("total_repayable") @db.Decimal(12, 2)
+  amountRepaid      Decimal      @default(0) @map("amount_repaid") @db.Decimal(12, 2)
+  purpose           String?
+  status            LoanStatus   @default(pending_vote)
+  disbursedAt       DateTime?    @map("disbursed_at") @db.Timestamptz(6)
+  dueDate           DateTime?    @map("due_date") @db.Date
+  completedAt       DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  chama             Chama        @relation(fields: [chamaId], references: [id])
+  borrowerMember    ChamaMember  @relation("LoanBorrower", fields: [borrowerMemberId], references: [id])
+  votes             LoanVote[]
+
+  @@map("loans")
+}
+
+model LoanVote {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  loanId         String      @map("loan_id") @db.Uuid
+  voterMemberId  String      @map("voter_member_id") @db.Uuid
+  vote           VoteChoice
+  votedAt        DateTime    @default(now()) @map("voted_at") @db.Timestamptz(6)
+  loan           Loan        @relation(fields: [loanId], references: [id])
+  voterMember    ChamaMember @relation(fields: [voterMemberId], references: [id])
+
+  @@unique([loanId, voterMemberId])
+  @@map("loan_votes")
+}
+
+model MgrSchedule {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId             String         @map("chama_id") @db.Uuid
+  chamaMemberId       String         @map("chama_member_id") @db.Uuid
+  cycleNumber         Int            @map("cycle_number")
+  originalCycleNumber Int            @map("original_cycle_number")
+  status              ScheduleStatus @default(upcoming)
+  receivedAmount      Decimal?       @map("received_amount") @db.Decimal(12, 2)
+  receivedAt          DateTime?      @map("received_at") @db.Timestamptz(6)
+  chama               Chama          @relation(fields: [chamaId], references: [id])
+  chamaMember         ChamaMember    @relation(fields: [chamaMemberId], references: [id])
+
+  @@unique([chamaId, cycleNumber])
+  @@map("mgr_schedule")
+}
+
+model SwapRequest {
+  id                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId               String      @map("chama_id") @db.Uuid
+  requesterMemberId     String      @map("requester_member_id") @db.Uuid
+  targetMemberId        String      @map("target_member_id") @db.Uuid
+  requesterCycle        Int         @map("requester_cycle")
+  targetCycle           Int         @map("target_cycle")
+  reason                String?
+  status                SwapStatus  @default(pending)
+  expiresAt             DateTime    @map("expires_at") @db.Timestamptz(6)
+  respondedAt           DateTime?   @map("responded_at") @db.Timestamptz(6)
+  chairpersonNotified   Boolean     @default(false) @map("chairperson_notified")
+  createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  chama                 Chama       @relation(fields: [chamaId], references: [id])
+  requesterMember       ChamaMember @relation("SwapRequester", fields: [requesterMemberId], references: [id])
+  targetMember          ChamaMember @relation("SwapTarget", fields: [targetMemberId], references: [id])
+
+  @@map("swap_requests")
+}
+
+model AuditLog {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId    String?   @map("chama_id") @db.Uuid
+  actorId    String?   @map("actor_id") @db.Uuid
+  entityType String    @map("entity_type") @db.VarChar(50)
+  entityId   String    @map("entity_id") @db.Uuid
+  action     String    @db.VarChar(50)
+  oldValue   Json?     @map("old_value")
+  newValue   Json?     @map("new_value")
+  ipAddress  String?   @map("ip_address") @db.VarChar(45)
+  deviceId   String?   @map("device_id") @db.VarChar(100)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  chama      Chama?    @relation(fields: [chamaId], references: [id])
+  actor      User?     @relation(fields: [actorId], references: [id])
+
+  @@map("audit_log")
+}
+
+model CreditScore {
+  id                         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                     String      @map("user_id") @db.Uuid
+  score                      Int
+  paymentConsistencyScore    Int?        @map("payment_consistency_score")
+  loanRepaymentScore         Int?        @map("loan_repayment_score")
+  tenureScore                Int?        @map("tenure_score")
+  contributionGrowthScore    Int?        @map("contribution_growth_score")
+  penaltyRecordScore         Int?        @map("penalty_record_score")
+  totalMonthsTracked         Int?        @map("total_months_tracked")
+  totalContributed           Decimal?    @map("total_contributed") @db.Decimal(12, 2)
+  chamasCount                Int?        @map("chamas_count")
+  consecutiveOnTime          Int?        @map("consecutive_on_time")
+  calculatedAt               DateTime    @default(now()) @map("calculated_at") @db.Timestamptz(6)
+  user                       User        @relation(fields: [userId], references: [id])
+  bankLoanOffers             BankLoanOffer[]
+
+  @@map("credit_scores")
+}
+
+model BankLoanOffer {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String              @map("user_id") @db.Uuid
+  creditScoreId      String              @map("credit_score_id") @db.Uuid
+  bankName           String              @map("bank_name") @db.VarChar(100)
+  maxAmount          Decimal             @map("max_amount") @db.Decimal(12, 2)
+  interestRate       Decimal             @map("interest_rate") @db.Decimal(5, 2)
+  minMonths          Int                 @map("min_months")
+  maxMonths          Int                 @map("max_months")
+  status             BankLoanOfferStatus @default(available)
+  expiresAt          DateTime            @map("expires_at") @db.Timestamptz(6)
+  appliedAt          DateTime?           @map("applied_at") @db.Timestamptz(6)
+  approvedAt         DateTime?           @map("approved_at") @db.Timestamptz(6)
+  referralFeePaid    Boolean             @default(false) @map("referral_fee_paid")
+  referralFeeAmount  Decimal?            @map("referral_fee_amount") @db.Decimal(12, 2)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  user               User                @relation(fields: [userId], references: [id])
+  creditScore        CreditScore         @relation(fields: [creditScoreId], references: [id])
+
+  @@map("bank_loan_offers")
+}
