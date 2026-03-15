@@ -17,8 +17,13 @@ export class MgrService {
     const existing = await prisma.mgrSchedule.findFirst({ where: { chamaId } });
     if (existing) throw new Error('MGR Schedule already exists for this chama');
 
-    // Shuffle members
-    const shuffled = members.sort(() => 0.5 - Math.random());
+    // Cryptographically secure Fisher-Yates shuffle
+    const crypto = await import('crypto');
+    const shuffled = [...members];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = crypto.randomInt(0, i + 1);
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
 
     const scheduleData = shuffled.map((member, index) => ({
       chamaId,
