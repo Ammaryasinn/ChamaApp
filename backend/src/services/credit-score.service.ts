@@ -8,7 +8,7 @@ export class CreditScoreService {
     const members = await prisma.chamaMember.findMany({
       where: { userId },
       include: {
-        contributions: true,
+        contributions: { orderBy: { dueDate: 'asc' } },
         borrowedLoans: true,
         chama: true
       }
@@ -19,7 +19,11 @@ export class CreditScoreService {
     let totalExpectedPayments = 0;
     let totalOnTimePayments = 0;
     let totalLatePenaltiesCount = 0;
-    
+
+    // Streak tracking — we walk all contributions across all chamas chronologically
+    // and maintain a running streak that resets on any miss.
+    const allContributions: Array<{ paidAt: Date | null; dueDate: Date; status: string; penaltyAmount: unknown }> = [];
+
     let totalLoans = 0;
     let onTimeLoans = 0;
 
@@ -33,6 +37,7 @@ export class CreditScoreService {
       if (tenureMonths > maxTenureMonths) maxTenureMonths = tenureMonths;
 
       for (const cont of member.contributions) {
+        allContributions.push(cont);
         if (cont.status !== 'pending') totalExpectedPayments++;
         if (cont.paidAt && cont.paidAt <= cont.dueDate && cont.status === 'paid') {
           totalOnTimePayments++;
@@ -50,6 +55,21 @@ export class CreditScoreService {
               onTimeLoans++;
            }
         }
+      }
+    }
+
+    // ── Consecutive on-time streak ────────────────────────────────────────────
+    // Sort all contributions chronologically and walk forward.
+    // Streak increments on paid-on-time, resets to 0 on any miss or late payment.
+    allContributions.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    let consecutiveOnTime = 0;
+    for (const cont of allContributions) {
+      if (cont.status === 'pending') continue; // not yet due — don't break streak
+      const onTime = cont.paidAt !== null && cont.paidAt <= cont.dueDate && cont.status === 'paid';
+      if (onTime) {
+        consecutiveOnTime++;
+      } else {
+        consecutiveOnTime = 0; // streak broken by a late/missed payment
       }
     }
 
@@ -100,7 +120,7 @@ export class CreditScoreService {
         totalMonthsTracked: Math.floor(maxTenureMonths),
         totalContributed,
         chamasCount: members.length,
-        consecutiveOnTime: totalOnTimePayments // Simulating for now
+        consecutiveOnTime
       }
     });
 

@@ -239,6 +239,7 @@ model Contribution {
   paidAt           DateTime?          @map("paid_at") @db.Timestamptz(6)
   stkSentAt        DateTime?          @map("stk_sent_at") @db.Timestamptz(6)
   reminderCount    Int                @default(0) @map("reminder_count")
+  splitApplied     Boolean            @default(false) @map("split_applied")
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
   cycle            ContributionCycle  @relation(fields: [cycleId], references: [id])
