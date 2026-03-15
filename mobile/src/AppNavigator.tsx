@@ -44,6 +44,7 @@ import LoanEligibilityScreen from "./screens/LoanEligibilityScreen";
 import PerksScreen from "./screens/PerksScreen";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import JoinChamaScreen from "./screens/JoinChamaScreen";
+import GroupPurchaseSetupScreen from "./screens/GroupPurchaseSetupScreen";
 
 // ── Context & New Screens ──
 import { ChamaProvider, useChamaContext } from "./context/ChamaContext";
@@ -199,6 +200,7 @@ export default function AppNavigator() {
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         {/* Chama creation flow */}
         <Stack.Screen name="ChamaType" component={ChamaTypeScreen} />
+        <Stack.Screen name="GroupPurchaseSetup" component={GroupPurchaseSetupScreen} />
         <Stack.Screen name="ChamaDetails" component={ChamaDetailsScreen} />
         {/* Chama type-specific setup screens */}
         <Stack.Screen name="MGRSetup" component={MGRSetupScreen} />

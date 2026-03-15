@@ -208,7 +208,7 @@ const TYPE_ROUTE: Record<ChamaTypeId, string> = {
   investment:     "InvestmentSetup",
   welfare:        "WelfareSetup",
   hybrid:         "InviteMembers",
-  group_purchase: "Placeholder",
+  group_purchase: "GroupPurchaseSetup",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
