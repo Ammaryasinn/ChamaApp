@@ -37,27 +37,31 @@ router.post('/callback', verifySafaricomIp, async (req, res) => {
 });
 
 /**
- * Public Callback endpoint for M-Pesa B2C
+ * B2C Result callback — Safaricom notifies us when a payout succeeds or fails.
  * POST /api/mpesa/b2c/result
  */
 router.post('/b2c/result', verifySafaricomIp, async (req, res) => {
   try {
-    // Implement B2C callback processing here
-    console.log('B2C Result:', req.body);
+    await MpesaService.processB2CResult(req.body);
     res.status(200).json({ ResultCode: 0, ResultDesc: 'Success' });
   } catch (error) {
-    console.error('M-Pesa B2C callback error:', error);
+    console.error('M-Pesa B2C result processing error:', error);
     res.status(200).json({ ResultCode: 1, ResultDesc: 'Failed internally' });
   }
 });
 
 /**
- * Public endpoint for M-Pesa Transaction Status Timeout
+ * B2C Timeout callback — Safaricom could not reach our ResultURL in time.
  * POST /api/mpesa/b2c/timeout
  */
 router.post('/b2c/timeout', verifySafaricomIp, async (req, res) => {
-   // Acknowledge Safaricom timeouts
-   res.status(200).json({ ResultCode: 0, ResultDesc: 'Success' });
+  try {
+    await MpesaService.processB2CTimeout(req.body);
+    res.status(200).json({ ResultCode: 0, ResultDesc: 'Acknowledged' });
+  } catch (error) {
+    console.error('M-Pesa B2C timeout processing error:', error);
+    res.status(200).json({ ResultCode: 0, ResultDesc: 'Acknowledged' }); // always 200 to stop retries
+  }
 });
 
 export default router;

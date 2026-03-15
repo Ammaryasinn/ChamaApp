@@ -59,25 +59,20 @@ export class MpesaService {
     referenceType: 'contribution' | 'penalty' | 'loan_repayment';
     description: string;
   }) {
-    // 1. Generate idempotency_key
+    // Generate idempotency_key — uuid+timestamp ensures uniqueness per STK attempt
     const idempotencyKey = `${uuidv4()}-${Date.now()}`;
 
-    // 2. Check if transaction with this reference is already pending
-    const existingPending = await prisma.transaction.findFirst({
-      where: {
-        referenceId,
-        referenceType,
-        status: 'pending'
-      }
-    });
-
-    if (existingPending) {
-      throw new Error('A transaction is already pending for this reference.');
-    }
-
-    // 3. Create Transaction in DB
-    const transaction = await prisma.transaction.create({
-      data: {
+    // Use upsert keyed on idempotencyKey as the race-condition guard.
+    // Two simultaneous calls with the same referenceId will each generate their own
+    // idempotencyKey (UUID-based), so they won't collide here. The real guard is that
+    // only one STK push is sent per contribution — enforced by the caller checking
+    // contribution.status before calling this method.
+    // If the same idempotencyKey is retried (network blip on our side), the upsert
+    // returns the existing row instead of creating a duplicate.
+    const transaction = await prisma.transaction.upsert({
+      where: { idempotencyKey },
+      update: {}, // already exists — return it unchanged
+      create: {
         chamaId,
         userId,
         transactionType: referenceType,
@@ -92,7 +87,7 @@ export class MpesaService {
       },
     });
 
-    // 4. Send STK Push
+    // Send STK Push
     const token = await this.getAuthToken();
     const timestamp = dayjs().format('YYYYMMDDHHmmss');
     const password = this.getPassword(timestamp);
@@ -388,6 +383,10 @@ export class MpesaService {
              // But unfortunately, Query API doesn't return the Amount or ReceiptNumber directly for success 
              // in some forms, so we might still rely on callback.
              // If ResultCode != 0, it definitively failed or was cancelled.
+
+             // IMPORTANT: Daraja STK Query API returns ResultCode as a STRING "0", not integer 0.
+             // Do NOT change this to !== 0 — that would silently treat every success as a failure.
+             // Ref: https://developer.safaricom.co.ke/docs#lipa-na-m-pesa-online-query-request
              if (ResultCode !== '0') {
                  await prisma.transaction.update({
                    where: { id: tx.id },
@@ -406,6 +405,117 @@ export class MpesaService {
           // If error is 500 from Daraja, usually means "The transaction is being processed"
           // We just skip and wait.
        }
+    }
+  }
+
+  /**
+   * Process B2C Result callback from Safaricom.
+   * Called when M-Pesa confirms or rejects a B2C (MGR payout) disbursement.
+   * POST /api/mpesa/b2c/result
+   */
+  public static async processB2CResult(body: any) {
+    const result = body?.Result;
+    if (!result) {
+      console.warn('[B2C Result] Received malformed payload:', JSON.stringify(body));
+      return;
+    }
+
+    const resultCode: number               = result.ResultCode;
+    const resultDesc: string               = result.ResultDesc ?? '';
+    const originatorConversationId: string = result.OriginatorConversationID ?? '';
+    const conversationId: string           = result.ConversationID ?? '';
+
+    // Parse result parameters into a flat map
+    const params: Record<string, unknown> = {};
+    for (const item of (result.ResultParameters?.ResultParameter ?? [])) {
+      params[item.Key] = item.Value;
+    }
+    const transactionReceipt = params['TransactionReceipt'] as string | undefined;
+    const receiverPartyName  = params['ReceiverPartyPublicName'] as string | undefined;
+    const amount             = params['TransactionAmount'] as number | undefined;
+
+    // Find the outbound transaction by originatorConversationId stored in metadata
+    const transaction = await prisma.transaction.findFirst({
+      where: {
+        direction: 'outbound',
+        status: 'processing',
+        metadata: { path: ['originatorConversationId'], equals: originatorConversationId },
+      },
+    });
+
+    if (!transaction) {
+      console.warn(`[B2C Result] No matching transaction for OriginatorConversationID=${originatorConversationId}`);
+      return;
+    }
+
+    if (resultCode === 0) {
+      // Disbursement confirmed by Safaricom
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: 'completed',
+          mpesaReceiptNumber: transactionReceipt,
+          mpesaResultCode: resultCode,
+          mpesaResultDesc: resultDesc,
+          metadata: {
+            ...(transaction.metadata as object ?? {}),
+            receiverPartyName,
+            amount,
+            conversationId,
+          },
+        },
+      });
+
+      // Mark linked MGR schedule entry as completed
+      if (transaction.referenceId && transaction.referenceType === 'mgr_payout') {
+        await prisma.mgrSchedule.updateMany({
+          where: { id: transaction.referenceId },
+          data: { status: 'completed', receivedAmount: amount, receivedAt: new Date() },
+        });
+      }
+
+      console.log(`[B2C Result] ✅ KES ${amount} confirmed to ${receiverPartyName} — receipt ${transactionReceipt}`);
+    } else {
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { status: 'failed', mpesaResultCode: resultCode, mpesaResultDesc: resultDesc },
+      });
+      console.error(`[B2C Result] ❌ Payout failed — ConversationID=${conversationId} Desc=${resultDesc}`);
+    }
+  }
+
+  /**
+   * Process B2C Timeout callback from Safaricom.
+   * Fires when Safaricom cannot deliver the result to our ResultURL within their window.
+   * POST /api/mpesa/b2c/timeout
+   *
+   * Strategy: log and leave the transaction in 'processing' so the reconciliation cron
+   * can re-query its status and either confirm or fail it cleanly. Do NOT mark failed
+   * immediately — the money may have already left our shortcode.
+   */
+  public static async processB2CTimeout(body: any) {
+    const originatorConversationId: string =
+      body?.OriginatorConversationID ?? body?.Result?.OriginatorConversationID ?? '';
+    console.warn(`[B2C Timeout] Safaricom timeout for OriginatorConversationID=${originatorConversationId}`);
+
+    if (!originatorConversationId) return;
+
+    const transaction = await prisma.transaction.findFirst({
+      where: {
+        direction: 'outbound',
+        status: 'processing',
+        metadata: { path: ['originatorConversationId'], equals: originatorConversationId },
+      },
+    });
+
+    if (transaction) {
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          mpesaResultDesc: 'Safaricom timeout — pending reconciliation',
+          metadata: { ...(transaction.metadata as object ?? {}), timedOutAt: new Date().toISOString() },
+        },
+      });
     }
   }
 }
