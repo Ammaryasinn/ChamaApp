@@ -25,6 +25,7 @@ interface Chama {
   id: string;
   name: string;
   role: string;
+  userRole: "chairperson" | "treasurer" | "secretary" | "member";
   members: number;
   chamaType: ChamaType;
   heroColor: string;
@@ -50,6 +51,7 @@ const MY_CHAMAS: Chama[] = [
     id: "1",
     name: "Mama Mboga Group",
     role: "CHAIRPERSON",
+    userRole: "chairperson",
     members: 20,
     chamaType: "merry_go_round",
     heroColor: "#006D5B",
@@ -64,6 +66,7 @@ const MY_CHAMAS: Chama[] = [
     id: "2",
     name: "Kilimani Invest Club",
     role: "TREASURER",
+    userRole: "treasurer",
     members: 12,
     chamaType: "investment",
     heroColor: "#0A1F18",
@@ -78,6 +81,7 @@ const MY_CHAMAS: Chama[] = [
     id: "3",
     name: "Kijiji Welfare Group",
     role: "MEMBER",
+    userRole: "member",
     members: 18,
     chamaType: "welfare",
     heroColor: "#3C1278",
@@ -92,6 +96,7 @@ const MY_CHAMAS: Chama[] = [
     id: "4",
     name: "Westlands Hybrid Chama",
     role: "SECRETARY",
+    userRole: "secretary",
     members: 20,
     chamaType: "hybrid",
     heroColor: "#006D5B",
@@ -106,6 +111,7 @@ const MY_CHAMAS: Chama[] = [
     id: "5",
     name: "Runda Appliance Group",
     role: "MEMBER",
+    userRole: "member",
     members: 20,
     chamaType: "group_purchase",
     heroColor: "#7C2D12",
@@ -414,8 +420,10 @@ export default function DashboardScreen({ navigation }: any) {
           <HeroCircles />
           <View style={S.heroNav}>
             <HazinaLogo />
-            <TouchableOpacity style={S.notifBtn}>
+            <TouchableOpacity style={S.notifBtn} onPress={() => navigation.navigate("Notifications")}>
               <Feather name="bell" size={20} color="rgba(255,255,255,0.9)" />
+              {/* unread dot */}
+              <View style={S.notifDot} />
             </TouchableOpacity>
           </View>
 
@@ -478,6 +486,41 @@ export default function DashboardScreen({ navigation }: any) {
             {chama.chamaType === "welfare" && (
               <View style={[S.pillDark, { alignSelf: "flex-start", marginTop: 8, backgroundColor: "rgba(255,255,255,0.15)" }]}>
                 <Text style={[S.pillDarkValOk, { color: "#FFFFFF" }]}>{chama.borrowPower!.replace("\n", " ")}</Text>
+              </View>
+            )}
+
+            {/* ── CHAIRPERSON ACTIONS (role-gated) ── */}
+            {chama.userRole === "chairperson" && (
+              <View style={S.chairRow}>
+                <TouchableOpacity style={S.chairBtn} onPress={() => navigation.navigate("ContributionDay")}>
+                  <Feather name="credit-card" size={15} color={chama.heroColor} />
+                  <Text style={[S.chairBtnTxt, { color: chama.heroColor }]}>Contrib. Day</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={S.chairBtn}
+                  onPress={() => {
+                    const { Alert } = require("react-native");
+                    Alert.alert(
+                      "Disburse to Muthoni Mwangi?",
+                      "This will trigger an M-Pesa B2C payout of Ksh 156,000 to the current recipient.",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Disburse", onPress: () => {} },
+                      ]
+                    );
+                  }}
+                >
+                  <Feather name="send" size={15} color={chama.heroColor} />
+                  <Text style={[S.chairBtnTxt, { color: chama.heroColor }]}>Disburse</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={S.chairBtn} onPress={() => navigation.navigate("Placeholder")}>
+                  <Feather name="file-text" size={15} color={chama.heroColor} />
+                  <Text style={[S.chairBtnTxt, { color: chama.heroColor }]}>Meeting</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={S.chairBtn} onPress={() => navigation.navigate("Settings")}>
+                  <Feather name="settings" size={15} color={chama.heroColor} />
+                  <Text style={[S.chairBtnTxt, { color: chama.heroColor }]}>Manage</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -686,4 +729,12 @@ const S = StyleSheet.create({
   sheetDivider: { height: 1, backgroundColor: "#EBF1EF", marginHorizontal: 12 },
   createSheetBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#F0FDFA", padding: 16, borderRadius: 14, borderStyle: "dashed", borderWidth: 1, borderColor: "#A7F3D0" },
   createSheetText: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.primary, fontWeight: "700" },
+
+  // Notification dot on bell
+  notifDot: { position: "absolute", top: -2, right: -2, width: 8, height: 8, borderRadius: 4, backgroundColor: "#F59E0B", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.4)" },
+
+  // Chairperson quick-action row
+  chairRow: { flexDirection: "row", gap: 8, marginTop: 20, flexWrap: "wrap" },
+  chairBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  chairBtnTxt: { fontFamily: FontFamily.heading, fontSize: 12, fontWeight: "700" },
 });

@@ -45,6 +45,9 @@ import PerksScreen from "./screens/PerksScreen";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import JoinChamaScreen from "./screens/JoinChamaScreen";
 import GroupPurchaseSetupScreen from "./screens/GroupPurchaseSetupScreen";
+import SplashScreen from "./screens/SplashScreen";
+import NotificationsScreen from "./screens/NotificationsScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 
 // ── Context & New Screens ──
 import { ChamaProvider, useChamaContext } from "./context/ChamaContext";
@@ -193,6 +196,7 @@ export default function AppNavigator() {
     <ChamaProvider>
       <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -219,7 +223,8 @@ export default function AppNavigator() {
         <Stack.Screen name="Members" component={MembersScreen} />
         <Stack.Screen name="InviteMembers" component={InviteMembersScreen} />
         <Stack.Screen name="PremiumSubscription" component={PremiumSubscriptionScreen} />
-        <Stack.Screen name="Settings" component={ProfileScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Placeholder" component={PlaceholderScreen} />
       </Stack.Navigator>
     </NavigationContainer>

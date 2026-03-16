@@ -21,6 +21,7 @@ type Tab = typeof TABS[number];
 
 export default function GroupLoanScreen({ navigation }: any) {
   const [tab, setTab] = useState<Tab>("Active");
+  const [voted, setVoted] = useState<"approve" | "decline" | null>(null);
 
   return (
     <SafeAreaView style={S.screen}>
@@ -78,12 +79,22 @@ export default function GroupLoanScreen({ navigation }: any) {
             </View>
 
             <View style={S.voteActions}>
-              <TouchableOpacity style={S.approveBtn} activeOpacity={0.85}>
-                <Text style={S.approveBtnText}>Approve</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={S.declineBtn} activeOpacity={0.85}>
-                <Text style={S.declineBtnText}>Decline</Text>
-              </TouchableOpacity>
+              {voted ? (
+                <View style={[S.approveBtn, voted === "decline" && S.declineBtn, { opacity: 0.7 }]}>
+                  <Text style={voted === "approve" ? S.approveBtnText : S.declineBtnText}>
+                    {voted === "approve" ? "✓ You approved" : "✗ You declined"}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity style={S.approveBtn} activeOpacity={0.85} onPress={() => setVoted("approve")}>
+                    <Text style={S.approveBtnText}>Approve</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={S.declineBtn} activeOpacity={0.85} onPress={() => setVoted("decline")}>
+                    <Text style={S.declineBtnText}>Decline</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         )}
@@ -113,7 +124,7 @@ export default function GroupLoanScreen({ navigation }: any) {
 
       {/* Footer */}
       <View style={S.footer}>
-        <TouchableOpacity style={S.requestBtn} activeOpacity={0.85}>
+        <TouchableOpacity style={S.requestBtn} activeOpacity={0.85} onPress={() => navigation.navigate("LoanEligibility")}>
           <Feather name="plus" size={18} color="#FFFFFF" />
           <Text style={S.requestBtnText}>Request a loan</Text>
         </TouchableOpacity>

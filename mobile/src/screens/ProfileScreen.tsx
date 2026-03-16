@@ -47,25 +47,25 @@ export default function ProfileScreen({ navigation }: any) {
       section: "MY CHAMAS",
       items: [
         { icon: "users",      label: "Invite members",    sub: "Add people to your chama",        onPress: () => navigation.navigate("InviteMembers") },
-        { icon: "file-text",  label: "Meeting minutes",   sub: "Record and view decisions",        onPress: () => {} },
+        { icon: "file-text",  label: "Meeting minutes",   sub: "Record and view decisions",        onPress: () => navigation.navigate("Placeholder") },
       ],
     },
     {
       section: "REPORTS",
       items: [
-        { icon: "bar-chart-2", label: "Annual report", sub: "Download PDF · 2025", badge: "PRO", onPress: () => {} },
+        { icon: "bar-chart-2", label: "Annual report", sub: "Download PDF · 2025", badge: "PRO", onPress: () => navigation.navigate("PremiumSubscription") },
       ],
     },
     {
       section: "MARKETPLACE",
       items: [
-        { icon: "shopping-bag", label: "Group purchases", sub: "Samsung, Ramtons deals", onPress: () => {} },
+        { icon: "shopping-bag", label: "Group purchases", sub: "Samsung, Ramtons deals", onPress: () => navigation.navigate("ChamaType") },
       ],
     },
     {
       section: "ACCOUNT",
       items: [
-        { icon: "settings", label: "Settings", sub: "Profile, notifications", onPress: () => {} },
+        { icon: "settings", label: "Settings", sub: "Profile, notifications", onPress: () => navigation.navigate("Settings") },
       ],
     },
   ];

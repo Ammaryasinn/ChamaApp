@@ -74,7 +74,7 @@ export default function FundsScreen({ navigation }: any) {
             </View>
             <Text style={[S.scAmount, { color: "#3B82F6", marginTop: 16 }]}>Ksh 46,800</Text>
             <Text style={[S.scSub, { color: "#3B82F6", marginTop: 4, marginBottom: 16 }]}>Vote to invest → 1 proposal pending</Text>
-            <TouchableOpacity style={[S.scBtn, { backgroundColor: "#3B82F6" }]}>
+            <TouchableOpacity style={[S.scBtn, { backgroundColor: "#3B82F6" }]} onPress={() => navigation.navigate("Portfolio")}>
               <Text style={S.scBtnText}>View portfolio and vote</Text>
             </TouchableOpacity>
           </View>
@@ -90,7 +90,7 @@ export default function FundsScreen({ navigation }: any) {
             </View>
             <Text style={[S.scAmount, { color: "#8B5CF6", marginTop: 16 }]}>Ksh 15,600</Text>
             <Text style={[S.scSub, { color: "#8B5CF6", marginTop: 4, marginBottom: 16 }]}>You can borrow up to Ksh 4,680</Text>
-            <TouchableOpacity style={[S.scBtn, { backgroundColor: "#8B5CF6" }]}>
+            <TouchableOpacity style={[S.scBtn, { backgroundColor: "#8B5CF6" }]} onPress={() => navigation.navigate("LoanEligibility")}>
               <Text style={S.scBtnText}>Apply for a loan</Text>
             </TouchableOpacity>
           </View>
