@@ -85,7 +85,7 @@ function Field({
         children
       ) : (
         <TextInput
-          style={[S.fieldInput, focused && S.fieldInputFocused]}
+          style={[S.fieldInput, focused && S.fieldInputFocused, { outlineStyle: "none" } as any]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -113,7 +113,7 @@ function PhoneField({
       <Text style={S.prefix}>+254</Text>
       <View style={S.phoneDivider} />
       <TextInput
-        style={S.phoneInput}
+        style={[S.phoneInput, { outlineStyle: "none" } as any]}
         value={value}
         onChangeText={onChangeText}
         placeholder="7XX XXX XXX"
@@ -138,7 +138,7 @@ export default function OnboardingScreen({ navigation }: any) {
   const canContinue = name.trim().length > 0;
 
   const handleContinue = () => {
-    navigation.navigate("MainTabs");
+    navigation.navigate("Welcome"); // Navigate to the Join/Create fork
   };
 
   return (

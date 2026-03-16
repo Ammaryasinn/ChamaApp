@@ -56,7 +56,7 @@ function PhoneInput({
       <Text style={S.prefix}>+254</Text>
       <View style={S.phoneDivider} />
       <TextInput
-        style={S.phoneInput}
+        style={[S.phoneInput, { outlineStyle: "none" } as any]}
         value={value}
         onChangeText={onChangeText}
         onFocus={onFocus}
