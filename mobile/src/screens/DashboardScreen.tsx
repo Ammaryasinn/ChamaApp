@@ -404,11 +404,10 @@ function GroupPurchaseSection() {
 import { useChamaContext } from "../context/ChamaContext";
 
 export default function DashboardScreen({ navigation }: any) {
-  const [activeId, setActiveId] = useState("1");
   const [modalVisible, setModalVisible] = useState(false);
-  const { setActiveChamaType } = useChamaContext();
+  const { activeChamaId, setActiveChama } = useChamaContext();
 
-  const chama = MY_CHAMAS.find(c => c.id === activeId) || MY_CHAMAS[0];
+  const chama = MY_CHAMAS.find(c => c.id === activeChamaId) || MY_CHAMAS[0];
 
   return (
     <SafeAreaView style={[S.screen, { backgroundColor: chama.heroColor }]}>
@@ -562,15 +561,14 @@ export default function DashboardScreen({ navigation }: any) {
             <Text style={S.sheetTitle}>Switch chama</Text>
             <View style={S.sheetList}>
               {MY_CHAMAS.map((c, i) => {
-                const isActive = c.id === activeId;
+                const isActive = c.id === activeChamaId;
                 return (
                   <View key={c.id}>
                     <TouchableOpacity
                       style={[S.sheetRow, isActive && { backgroundColor: "#F9FAFB" }]}
                       activeOpacity={0.7}
                       onPress={() => { 
-                        setActiveId(c.id); 
-                        setActiveChamaType(c.chamaType);
+                        setActiveChama(c.id, c.chamaType);
                         setModalVisible(false); 
                       }}
                     >
