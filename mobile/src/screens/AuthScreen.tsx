@@ -224,7 +224,8 @@ function OtpView({
           onPress={complete ? onVerify : undefined}
           activeOpacity={0.85}
         >
-          <Text style={S.btnPrimaryText}>Verify</Text>
+          <Feather name="arrow-right" size={18} color="#fff" />
+          <Text style={S.btnPrimaryText}>Verify code</Text>
         </TouchableOpacity>
 
         <Text style={S.resendRow}>
@@ -252,6 +253,17 @@ export default function AuthScreen({ navigation }: any) {
   const [step, setStep] = useState<"signin" | "otp">("signin");
   const [phone, setPhone] = useState("");
 
+  const handleVerify = () => {
+    // Simulate: numbers starting with 71x are "existing" users
+    // In production this would hit the API
+    const isExistingUser = phone.startsWith("71");
+    if (isExistingUser) {
+      navigation.replace("MainTabs");
+    } else {
+      navigation.replace("Onboarding");
+    }
+  };
+
   return (
     <SafeAreaView style={S.screen}>
       <StatusBar style="light" />
@@ -270,7 +282,7 @@ export default function AuthScreen({ navigation }: any) {
           ) : (
             <OtpView
               phone={phone}
-              onVerify={() => navigation.replace("Onboarding")}
+              onVerify={handleVerify}
               onBack={() => setStep("signin")}
             />
           )}
@@ -393,17 +405,19 @@ const S = StyleSheet.create({
   phoneDivider:{ width: 1, height: 20, backgroundColor: "#EBF1EF", marginRight: Spacing[3] },
   phoneInput:  { flex: 1, fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textPrimary },
 
-  // ── OTP boxes — square, roomy ────────────────────────────────────────────
+  // ── OTP boxes — fixed size so 6 fit on any screen ──────────────────────────
   otpRow: {
     flexDirection: "row",
     gap: 8,
     marginBottom: Spacing[6],
     marginTop: 8,
+    justifyContent: "space-between",
   },
   otpBox: {
     flex: 1,
-    aspectRatio: 1,           // makes each box square
-    borderRadius: Radius.badge,
+    height: 56,             // fixed height — no aspectRatio
+    minWidth: 0,            // allow shrinking below content width
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: "#EBF1EF",
     backgroundColor: "#F6F9F7",
@@ -411,7 +425,7 @@ const S = StyleSheet.create({
     fontFamily: FontFamily.heading,
     fontSize: 22,
     color: Colors.textPrimary,
-    paddingVertical: 0,       // override system vertical padding so square stays
+    paddingVertical: 0,
   },
   otpBoxFilled: {
     borderColor: Colors.primary,
