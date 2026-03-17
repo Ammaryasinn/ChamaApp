@@ -24,14 +24,20 @@ const PARTNERS = [
   { id: "3", initial: "CIC", name: "CIC Insurance", sub: "Group health and last expense cover", deal: "Group rates", color: "#047857" },
 ];
 
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen";
+
 export default function DealsScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
 
       <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]} bounces={false}>
         {/* ── HERO HEADER ── */}
-        <View style={S.hero}>
+        <View style={[S.hero, { backgroundColor: themeColor }]}>
           <View style={S.circleTopRight} />
           
           <View style={S.heroNav}>
@@ -137,9 +143,9 @@ export default function DealsScreen({ navigation }: any) {
 }
 
 const S = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#7C2D12" },
+  screen: { flex: 1 },
 
-  hero: { backgroundColor: "#7C2D12", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: "hidden" },
+  hero: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: "hidden" },
   circleTopRight: { position: "absolute", width: 300, height: 300, borderRadius: 150, backgroundColor: "rgba(255,255,255,0.03)", top: -100, right: -50 },
   
   heroNav: { flexDirection: "row", alignItems: "center", marginBottom: 24, gap: 12 },

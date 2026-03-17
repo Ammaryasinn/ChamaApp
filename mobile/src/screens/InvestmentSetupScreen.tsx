@@ -22,6 +22,7 @@ import {
   Shadow,
   Spacing,
 } from "../theme";
+import { useChamaContext } from "../context/ChamaContext";
 
 const FOCUS_OPTIONS = [
   {
@@ -103,6 +104,7 @@ function FocusCard({
 }
 
 export default function InvestmentSetupScreen({ navigation }: any) {
+  const { setActiveChama } = useChamaContext();
   const [name, setName] = useState("");
   const [monthlyTarget, setMonthlyTarget] = useState("");
   const [focus, setFocus] = useState("stocks");
@@ -238,16 +240,17 @@ export default function InvestmentSetupScreen({ navigation }: any) {
       <View style={styles.footer}>
         <Pressable
           style={[styles.continueBtn, !canContinue && styles.continueBtnDisabled]}
-          onPress={() =>
-            navigation.navigate("InvestmentDashboard", {
+          onPress={() => {
+            navigation.navigate("InviteMembers", {
+              chamaType: "investment",
               name: name.trim(),
               monthlyTarget,
               focus,
-            })
-          }
+            });
+          }}
           disabled={!canContinue}
         >
-          <Text style={styles.continueBtnText}>Continue to Portfolio</Text>
+          <Text style={styles.continueBtnText}>Continue</Text>
           <Feather
             name="arrow-right"
             size={18}

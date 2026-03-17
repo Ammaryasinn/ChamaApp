@@ -10,6 +10,7 @@ import {
   Animated,
   Modal,
   Platform,
+  TextInput,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -59,7 +60,7 @@ function AnimatedToggle({ isOn }: { isOn: boolean }) {
 //  Hybrid builder — sits inside the expanded card
 // ─────────────────────────────────────────────────────────────────────────────
 
-function HybridBuilder({ contribution, mgrPct, investPct, welfarePct, investEnabled, welfareEnabled, onAdjustMgr, onToggleInvest, onToggleWelfare }: any) {
+function HybridBuilder({ name, onNameChange, contribution, mgrPct, investPct, welfarePct, investEnabled, welfareEnabled, onAdjustMgr, onToggleInvest, onToggleWelfare }: any) {
   const mgrAmt     = Math.round((contribution * mgrPct) / 100);
   const invAmt     = Math.round((contribution * investPct) / 100);
   const welfareAmt = contribution - mgrAmt - invAmt;
@@ -68,6 +69,17 @@ function HybridBuilder({ contribution, mgrPct, investPct, welfarePct, investEnab
     <View style={S.hybridWrap}>
       <Text style={S.hybridTitle}>Configure your split</Text>
       <Text style={S.hybridSub}>Choose which components and how to split contributions</Text>
+
+      <Text style={[S.sliderLabel, { marginTop: 4, marginBottom: 8 }]}>CHAMA NAME</Text>
+      <View style={S.nameInputWrap}>
+        <TextInput
+          style={S.nameInput}
+          value={name}
+          onChangeText={onNameChange}
+          placeholder="e.g. Westlands Hybrid"
+          placeholderTextColor={Colors.textMuted}
+        />
+      </View>
 
       {/* Toggle rows */}
       <View style={S.toggleBlock}>
@@ -367,6 +379,7 @@ function NudgeModal({ visible, onKeep, onAddPot }: {
 export default function ChamaTypeScreen({ navigation }: any) {
   const [selected, setSelected] = useState<ChamaTypeId>("merry_go_round");
   const [nudge, setNudge] = useState(false);
+  const [hybridName, setHybridName] = useState("");
 
   const [investEnabled, setInvestEnabled] = useState(true);
   const [welfareEnabled, setWelfareEnabled] = useState(false);
@@ -391,7 +404,7 @@ export default function ChamaTypeScreen({ navigation }: any) {
 
   const handleContinue = () => {
     if (selected === "hybrid") {
-      navigation.navigate("InviteMembers", { chamaType: "HYBRID", mgrPercent: clampedMgr, investPercent: investPct, welfarePercent: welfarePct });
+      navigation.navigate("InviteMembers", { chamaType: "HYBRID", name: hybridName.trim() || "Hybrid Chama", mgrPercent: clampedMgr, investPercent: investPct, welfarePercent: welfarePct });
     } else {
       navigation.navigate(TYPE_ROUTE[selected]);
     }
@@ -439,6 +452,8 @@ export default function ChamaTypeScreen({ navigation }: any) {
                 hybridContent={
                   t.id === "hybrid" ? (
                     <HybridBuilder
+                      name={hybridName}
+                      onNameChange={setHybridName}
                       contribution={CONTRIB}
                       mgrPct={clampedMgr}
                       investPct={investPct}
@@ -592,6 +607,12 @@ const S = StyleSheet.create({
   hybridWrap: { padding: 14, backgroundColor: "#FFFFFF" },
   hybridTitle: { fontFamily: FontFamily.heading, fontSize: 13, color: Colors.textPrimary, fontWeight: "700", marginBottom: 2 },
   hybridSub:   { fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 14 },
+
+  nameInputWrap: {
+    backgroundColor: "#F9FBFA", borderWidth: 1, borderColor: "#EBF1EF", borderRadius: 10,
+    marginBottom: 16, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  nameInput: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.textPrimary },
 
   toggleBlock: {
     backgroundColor: "#F6F9F7", borderRadius: 10, borderWidth: 1, borderColor: "#EBF1EF",

@@ -6,12 +6,13 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
+import { useChamaContext } from "../context/ChamaContext";
 
-function HeroCircles() {
+function HeroCircles({ color }: { color?: string }) {
   return (
     <>
-      <View style={S.cTR} />
-      <View style={S.cBL} />
+      <View style={[S.cTR, color ? { backgroundColor: "rgba(255,255,255,0.1)" } : null]} />
+      <View style={[S.cBL, color ? { backgroundColor: "rgba(0,0,0,0.1)" } : null]} />
     </>
   );
 }
@@ -42,6 +43,9 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function ProfileScreen({ navigation }: any) {
+  const { activeChamaColor } = useChamaContext();
+  const heroBg = activeChamaColor || Colors.primary;
+
   const MENU: { section: string; items: MenuItem[] }[] = [
     {
       section: "MY CHAMAS",
@@ -75,8 +79,8 @@ export default function ProfileScreen({ navigation }: any) {
       <StatusBar style="light" />
 
       {/* Hero */}
-      <View style={S.hero}>
-        <HeroCircles />
+      <View style={[S.hero, { backgroundColor: heroBg }]}>
+        <HeroCircles color={activeChamaColor} />
         <Text style={S.loggedAs}>Logged in as</Text>
         <View style={S.profileRow}>
           <View style={S.avatar}>

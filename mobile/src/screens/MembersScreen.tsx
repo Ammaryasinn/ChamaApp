@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
-  TextInput, TouchableOpacity, Pressable,
+  TextInput, TouchableOpacity, Pressable, Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -36,10 +36,15 @@ const STATUS_STYLE: Record<MemberStatus, { label: string; color: string }> = {
   late:    { label: "Late",    color: "#DC2626" },
 };
 
-function MemberRow({ item, onPress }: { item: Member; onPress: () => void }) {
+function MemberRow({ item, onPress, themeColor }: { item: Member; onPress: () => void; themeColor: string }) {
   const st = STATUS_STYLE[item.status];
+  const handleLongPress = () =>
+    Alert.alert("Send Reminder", `Send a payment reminder to ${item.name}?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Send", onPress: () => Alert.alert("✓", `Reminder sent to ${item.name}`) },
+    ]);
   return (
-    <Pressable style={S.memberRow} onPress={onPress}>
+    <Pressable style={S.memberRow} onPress={onPress} onLongPress={handleLongPress} delayLongPress={500}>
       <View style={[S.avatar, { backgroundColor: item.avatarColor }]}>
         <Text style={S.avatarText}>{item.initials}</Text>
       </View>
@@ -56,25 +61,34 @@ function MemberRow({ item, onPress }: { item: Member; onPress: () => void }) {
   );
 }
 
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen"; // Reuse mock data for now
+
 export default function MembersScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
+
   const [query, setQuery] = useState("");
   const filtered = MEMBERS.filter(
     (m) => m.name.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
 
       {/* Hero */}
-      <View style={S.hero}>
+      <View style={[S.hero, { backgroundColor: themeColor }]}>
         <HeroCircles />
         <View style={S.heroNav}>
           <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
             <Feather name="chevron-left" size={18} color="#fff" />
           </Pressable>
           <Text style={S.heroTitle}>Members</Text>
-          <View style={{ width: 28 }} />
+          <Pressable style={S.inviteBtn} hitSlop={12} onPress={() => navigation.navigate("InviteMembers")}>
+            <Feather name="user-plus" size={16} color="#fff" />
+          </Pressable>
         </View>
         <Text style={S.heroSub}>Mama Mboga Group · 20 members</Text>
 
@@ -105,7 +119,7 @@ export default function MembersScreen({ navigation }: any) {
           data={filtered}
           keyExtractor={(_, i) => String(i)}
           renderItem={({ item }) => (
-            <MemberRow item={item} onPress={() => navigation.navigate("MemberCreditProfile")} />
+            <MemberRow item={item} onPress={() => navigation.navigate("MemberCreditProfile")} themeColor={themeColor} />
           )}
           contentContainerStyle={{ paddingBottom: 120 }}
           ItemSeparatorComponent={() => <View style={S.sep} />}
@@ -115,7 +129,20 @@ export default function MembersScreen({ navigation }: any) {
 
       {/* Bottom CTA */}
       <View style={S.footer}>
-        <TouchableOpacity style={S.collectBtn} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[S.collectBtn, { backgroundColor: themeColor }]}
+          activeOpacity={0.85}
+          onPress={() =>
+            Alert.alert(
+              "Collect Contributions",
+              "Send M-Pesa STK push to all pending members?",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Send", onPress: () => Alert.alert("✓ Sent!", "STK push sent to all pending members.") },
+              ],
+            )
+          }
+        >
           <Feather name="credit-card" size={18} color="#FFFFFF" />
           <Text style={S.collectBtnText}>Collect via M-Pesa</Text>
         </TouchableOpacity>
@@ -125,14 +152,15 @@ export default function MembersScreen({ navigation }: any) {
 }
 
 const S = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.primary },
+  screen: { flex: 1 },
   circleTopRight: { position: "absolute", width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.05)", top: -50, right: -50 },
   circleBottomLeft: { position: "absolute", width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(245,158,11,0.10)", bottom: -40, left: -30 },
 
-  hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 20, overflow: "hidden", gap: 8 },
+  hero: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 20, overflow: "hidden", gap: 8 },
   heroNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 20, color: "#FFFFFF", fontWeight: "800" },
+  inviteBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   heroSub: { fontFamily: FontFamily.regular, fontSize: 12, color: "rgba(255,255,255,0.65)" },
 
   pill: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", backgroundColor: "rgba(0,0,0,0.25)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5 },

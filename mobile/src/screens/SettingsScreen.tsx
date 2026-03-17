@@ -29,7 +29,12 @@ export default function SettingsScreen({ navigation }: any) {
         text: "Log out", style: "destructive",
         onPress: async () => {
           await AsyncStorage.removeItem("authToken");
-          navigation.replace("Auth");
+          // getParent() climbs from the tab navigator to the root stack navigator
+          const rootNav = navigation.getParent() ?? navigation;
+          rootNav.reset({
+            index: 0,
+            routes: [{ name: "Auth" }],
+          });
         },
       },
     ]);

@@ -10,6 +10,7 @@ import {
   Modal,
   Animated,
   Platform,
+  Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -46,7 +47,7 @@ interface Chama {
   deliveryStatus?: string;
 }
 
-const MY_CHAMAS: Chama[] = [
+export const MY_CHAMAS: Chama[] = [
   {
     id: "1",
     name: "Mama Mboga Group",
@@ -54,7 +55,7 @@ const MY_CHAMAS: Chama[] = [
     userRole: "chairperson",
     members: 20,
     chamaType: "merry_go_round",
-    heroColor: "#006D5B",
+    heroColor: "#0D9488", // Vibrant Teal
     typeLabel: "Mchezo",
     initials: "MM",
     balanceLabel: "GROUP POT",
@@ -69,7 +70,7 @@ const MY_CHAMAS: Chama[] = [
     userRole: "treasurer",
     members: 12,
     chamaType: "investment",
-    heroColor: "#0A1F18",
+    heroColor: "#1A3C5E",
     typeLabel: "Uwekezaji",
     initials: "KI",
     balanceLabel: "TOTAL FUND VALUE",
@@ -169,12 +170,12 @@ function HazinaLogo() {
 //  Sections
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SectionHeader({ title, action }: { title: string; action?: string }) {
+function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
   return (
     <View style={S.sectionHeader}>
       <Text style={S.sectionTitle}>{title}</Text>
       {action && (
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onAction}>
           <Text style={S.seeAll}>{action}</Text>
         </TouchableOpacity>
       )}
@@ -183,10 +184,10 @@ function SectionHeader({ title, action }: { title: string; action?: string }) {
 }
 
 // ─ Merry Go Round / General Activity
-function MGRRotationSection() {
+function MGRRotationSection({ navigation }: { navigation?: any }) {
   return (
     <View style={S.section}>
-      <SectionHeader title="MGR rotation" action="See all" />
+      <SectionHeader title="MGR rotation" action="See all" onAction={() => navigation?.navigate?.("MGRSchedule")} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.rotationRow}>
         {ROTATION.map(r => (
           <View key={r.id} style={[S.rotCard, r.status === "now" && S.rotCardNow]}>
@@ -245,10 +246,10 @@ function RecentActivitySection() {
 }
 
 // ─ Investment
-function InvestmentPortfolioSection() {
+function InvestmentPortfolioSection({ navigation }: { navigation?: any }) {
   return (
     <View style={S.section}>
-      <SectionHeader title="Portfolio" action="Full report" />
+      <SectionHeader title="Portfolio" action="Full report" onAction={() => navigation?.navigate?.("Portfolio")} />
       <View style={S.portList}>
         {PORTFOLIO.map(p => (
           <View key={p.id} style={S.portItem}>
@@ -271,8 +272,12 @@ function InvestmentPortfolioSection() {
           <Text style={S.voteLabel}>PROPOSAL · 3 DAYS LEFT</Text>
           <Text style={S.voteTitle}>Invest Ksh 200,000 in additional NSE shares — Equity Bank stock</Text>
           <View style={S.voteBtns}>
-            <TouchableOpacity style={S.voteApprove}><Text style={S.voteApproveText}>Approve</Text></TouchableOpacity>
-            <TouchableOpacity style={S.voteDecline}><Text style={S.voteDeclineText}>Decline</Text></TouchableOpacity>
+            <TouchableOpacity style={S.voteApprove} onPress={() => Alert.alert("✓ Voted", "You approved this proposal.")}>  
+              <Text style={S.voteApproveText}>Approve</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={S.voteDecline} onPress={() => Alert.alert("✗ Voted", "You declined this proposal.")}>
+              <Text style={S.voteDeclineText}>Decline</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -281,20 +286,20 @@ function InvestmentPortfolioSection() {
 }
 
 // ─ Welfare
-function LoanPoolSection({ borrowPower }: { borrowPower?: string }) {
+function LoanPoolSection({ borrowPower, navigation }: { borrowPower?: string; navigation?: any }) {
   return (
     <View style={S.section}>
       <View style={S.borrowCard}>
         <Text style={S.borrowLabel}>Your borrowing power</Text>
         <Text style={S.borrowVal}>{borrowPower?.replace("You can borrow up to Ksh\n", "Ksh ")}</Text>
         <Text style={S.borrowSub}>3× your contributions · 5% interest · Up to 3 months</Text>
-        <TouchableOpacity style={S.borrowBtn}>
+        <TouchableOpacity style={S.borrowBtn} onPress={() => navigation?.navigate?.("LoanEligibility")}>
           <Text style={S.borrowBtnText}>Apply for a loan</Text>
         </TouchableOpacity>
       </View>
 
       <View style={{ marginTop: 24 }}>
-        <SectionHeader title="Active loans" action="See all" />
+        <SectionHeader title="Active loans" action="See all" onAction={() => navigation?.navigate?.("GroupLoan")} />
         <View style={S.activityList}>
           <View style={S.activityItem}>
             <View style={[S.actIcon, { backgroundColor: "#EDE9FE" }]}><Feather name="dollar-sign" size={14} color="#7C3AED" /></View>
@@ -348,10 +353,10 @@ function HybridDashboardSection() {
 }
 
 // ─ Group Purchase
-function GroupPurchaseSection() {
+function GroupPurchaseSection({ navigation }: { navigation?: any }) {
   return (
     <View style={S.section}>
-      <SectionHeader title="Delivery progress" action="Full schedule" />
+      <SectionHeader title="Delivery progress" action="Full schedule" onAction={() => navigation?.navigate?.("Deals")} />
       <View style={S.cycleProgressRow}>
         <Text style={S.cycleProgressText}>8 of 20 members received</Text>
         <Text style={S.cycleProgressPct}>40%</Text>
@@ -533,11 +538,11 @@ export default function DashboardScreen({ navigation }: any) {
 
         {/* ── BODY SECTIONS BY TYPE ── */}
         <View style={S.body}>
-          {chama.chamaType === "merry_go_round" && <MGRRotationSection />}
-          {chama.chamaType === "investment" && <InvestmentPortfolioSection />}
-          {chama.chamaType === "welfare" && <LoanPoolSection borrowPower={chama.borrowPower} />}
+          {chama.chamaType === "merry_go_round" && <MGRRotationSection navigation={navigation} />}
+          {chama.chamaType === "investment" && <InvestmentPortfolioSection navigation={navigation} />}
+          {chama.chamaType === "welfare" && <LoanPoolSection borrowPower={chama.borrowPower} navigation={navigation} />}
           {chama.chamaType === "hybrid" && <HybridDashboardSection />}
-          {chama.chamaType === "group_purchase" && <GroupPurchaseSection />}
+          {chama.chamaType === "group_purchase" && <GroupPurchaseSection navigation={navigation} />}
 
           {/* Render Recent Activity for types that need it */}
           {(chama.chamaType === "merry_go_round" || chama.chamaType === "hybrid") && (

@@ -13,6 +13,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily } from "../theme";
+import { useChamaContext } from "../context/ChamaContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Constants
@@ -477,7 +478,7 @@ export default function GroupPurchaseSetupScreen({ navigation }: any) {
 
   const handleContinue = () => {
     if (step < 4) setStep(step + 1);
-    else navigation.navigate("MainTabs");
+    else navigation.navigate("InviteMembers", { chamaType: "group_purchase" });
   };
 
   const handleBack = () => {

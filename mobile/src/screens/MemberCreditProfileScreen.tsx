@@ -24,13 +24,19 @@ const SCORE_DATA = [
   { label: "Contribution growth", weight: "10%", score: 85,  color: Colors.primary },
 ];
 
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen";
+
 export default function MemberCreditProfileScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero */}
-        <View style={S.hero}>
+        <View style={[S.hero, { backgroundColor: themeColor }]}>
           <HeroCircles />
           <View style={S.heroNav}>
             <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
@@ -48,7 +54,7 @@ export default function MemberCreditProfileScreen({ navigation }: any) {
           <View style={S.rangeWrap}>
             <View style={S.rangeTrack}>
               <View style={[S.rangeFill, { width: "75%" }]} />
-              <View style={[S.rangeThumb, { left: "75%", marginLeft: -8 }]} />
+              <View style={[S.rangeThumb, { left: "75%", marginLeft: -8, borderColor: themeColor }]} />
             </View>
             <View style={S.rangeLabels}>
               <Text style={S.rangeLabelStart}>300</Text>
@@ -98,11 +104,11 @@ export default function MemberCreditProfileScreen({ navigation }: any) {
 }
 
 const S = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.primary },
+  screen: { flex: 1 },
   circleTopRight: { position: "absolute", width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.05)", top: -50, right: -50 },
   circleBottomLeft: { position: "absolute", width: 160, height: 160, borderRadius: 80, backgroundColor: "rgba(245,158,11,0.10)", bottom: -50, left: -40 },
 
-  hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 30, overflow: "hidden", alignItems: "center" },
+  hero: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 30, overflow: "hidden", alignItems: "center" },
   heroNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", alignSelf: "stretch", marginBottom: 12 },
   backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 18, color: "#FFFFFF", fontWeight: "800" },
@@ -118,7 +124,7 @@ const S = StyleSheet.create({
   },
   rangeThumb: {
     position: "absolute", top: -5, width: 18, height: 18,
-    borderRadius: 9, backgroundColor: "#FFFFFF", borderWidth: 2.5, borderColor: Colors.primary,
+    borderRadius: 9, backgroundColor: "#FFFFFF", borderWidth: 2.5,
   },
   rangeLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
   rangeLabelStart: { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },

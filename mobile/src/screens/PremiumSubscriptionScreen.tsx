@@ -6,16 +6,17 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
+import { useChamaContext } from "../context/ChamaContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Shared helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function HeroCircles() {
+function HeroCircles({ color }: { color?: string }) {
   return (
     <>
-      <View style={S.cTR} />
-      <View style={S.cBL} />
+      <View style={[S.cTR, color ? { backgroundColor: "rgba(255,255,255,0.1)" } : null]} />
+      <View style={[S.cBL, color ? { backgroundColor: "rgba(0,0,0,0.1)" } : null]} />
     </>
   );
 }
@@ -45,26 +46,28 @@ function CrossRow({ text }: { text: string }) {
 function Slider({
   value, min, max, step = 1,
   onChange, label, unit,
+  color,
 }: {
   value: number; min: number; max: number; step?: number;
   onChange: (v: number) => void; label: string; unit: string;
+  color: string;
 }) {
   return (
     <View style={S.sliderWrap}>
       <Text style={S.sliderCaption}>{label}</Text>
       <View style={S.sliderRow}>
         <Pressable style={S.stepBtn} onPress={() => onChange(Math.max(min, value - step))}>
-          <Text style={S.stepBtnText}>−</Text>
+          <Text style={[S.stepBtnText, { color }]}>−</Text>
         </Pressable>
         <View style={S.trackContainer}>
           <View style={S.trackBg} />
-          <View style={[S.trackFill, { width: `${((value - min) / (max - min)) * 100}%` as any }]} />
-          <View style={[S.trackThumb, { left: `${((value - min) / (max - min)) * 100}%` as any, marginLeft: -10 }]} />
+          <View style={[S.trackFill, { width: `${((value - min) / (max - min)) * 100}%` as any, backgroundColor: color }]} />
+          <View style={[S.trackThumb, { left: `${((value - min) / (max - min)) * 100}%` as any, marginLeft: -10, borderColor: color }]} />
         </View>
-        <Text style={S.sliderValue}>{value}</Text>
+        <Text style={[S.sliderValue, { color }]}>{value}</Text>
         <Text style={S.sliderUnit}>{unit}</Text>
         <Pressable style={S.stepBtn} onPress={() => onChange(Math.min(max, value + step))}>
-          <Text style={S.stepBtnText}>+</Text>
+          <Text style={[S.stepBtnText, { color }]}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -76,6 +79,9 @@ function Slider({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PremiumSubscriptionScreen({ navigation }: any) {
+  const { activeChamaColor } = useChamaContext();
+  const heroBg = activeChamaColor || Colors.primary;
+
   const [members, setMembers] = useState(20);
   const [chamas,  setChamas]  = useState(8);
 
@@ -99,8 +105,8 @@ export default function PremiumSubscriptionScreen({ navigation }: any) {
       <StatusBar style="light" />
 
       {/* ── Hero header ───────────────────────────────────── */}
-      <View style={S.hero}>
-        <HeroCircles />
+      <View style={[S.hero, { backgroundColor: heroBg }]}>
+        <HeroCircles color={activeChamaColor} />
         <View style={S.heroNav}>
           <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
             <Feather name="chevron-left" size={18} color="#fff" />
@@ -148,9 +154,9 @@ export default function PremiumSubscriptionScreen({ navigation }: any) {
             PREMIUM TIER
           ════════════════════════════════════════════════ */}
         <View style={[S.card, S.cardFeatured]}>
-          {/* Header — SOLID #006D5B */}
-          <View style={S.cardHeaderGreen}>
-            <View style={S.badgePremium}><Text style={S.badgePremiumText}>Premium — Bila kikomo</Text></View>
+          {/* Header */}
+          <View style={[S.cardHeaderGreen, { backgroundColor: heroBg }]}>
+            <View style={S.badgePremium}><Text style={[S.badgePremiumText, { color: heroBg }]}>Premium — Bila kikomo</Text></View>
             <Text style={[S.planName, S.planNameWhite]}>Premium</Text>
             <View style={S.priceRow}>
               <Text style={[S.priceCurrency, S.priceWhite]}>Ksh</Text>
@@ -169,6 +175,7 @@ export default function PremiumSubscriptionScreen({ navigation }: any) {
               value={members} min={2} max={50}
               onChange={setMembers}
               unit="members"
+              color={heroBg}
             />
           </View>
 
@@ -183,7 +190,7 @@ export default function PremiumSubscriptionScreen({ navigation }: any) {
             <CheckRow text="Bank loan offers unlocked" amber />
           </View>
 
-          <TouchableOpacity style={S.upgradePrimaryBtn} activeOpacity={0.85}>
+          <TouchableOpacity style={[S.upgradePrimaryBtn, { backgroundColor: heroBg }]} activeOpacity={0.85}>
             <Text style={S.upgradePrimaryText}>Upgrade to Premium</Text>
           </TouchableOpacity>
         </View>
@@ -192,9 +199,9 @@ export default function PremiumSubscriptionScreen({ navigation }: any) {
             INSTITUTION / TAASISI TIER
           ════════════════════════════════════════════════ */}
         <View style={[S.card, S.cardFeatured]}>
-          {/* Header — SOLID #006D5B */}
-          <View style={S.cardHeaderGreen}>
-            <View style={S.badgeTaasisi}><Text style={S.badgeTaasisiText}>Institution — Taasisi</Text></View>
+          {/* Header */}
+          <View style={[S.cardHeaderGreen, { backgroundColor: heroBg }]}>
+            <View style={S.badgeTaasisi}><Text style={[S.badgeTaasisiText, { color: heroBg }]}>Institution — Taasisi</Text></View>
             <Text style={[S.planName, S.planNameWhite]}>Institution</Text>
             <View style={S.priceRow}>
               <Text style={[S.priceCurrency, S.priceWhite]}>Ksh</Text>
@@ -213,6 +220,7 @@ export default function PremiumSubscriptionScreen({ navigation }: any) {
               value={chamas} min={1} max={25}
               onChange={setChamas}
               unit="chamas"
+              color={heroBg}
             />
 
             {/* 3-row breakdown: base · extra · divider · total */}
@@ -296,7 +304,7 @@ const S = StyleSheet.create({
 
   // Plan cards
   card: { backgroundColor: "#FFFFFF", borderRadius: 16, borderWidth: 1, borderColor: "#EBF1EF", overflow: "hidden" },
-  cardFeatured: { borderWidth: 2, borderColor: Colors.primary },
+  cardFeatured: { borderWidth: 1.5, borderColor: "#EBF1EF" },
 
   // Card headers
   cardHeaderFree: { backgroundColor: "#F6F9F7", padding: 16, gap: 4 },

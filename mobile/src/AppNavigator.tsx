@@ -66,27 +66,29 @@ function TabIcon({
   icon,
   label,
   focused,
+  activeColor,
 }: {
   icon: TabIconName;
   label: string;
   focused: boolean;
+  activeColor: string;
 }) {
   return (
     <View style={S.tabItem}>
       <Feather
         name={icon}
         size={22}
-        color={focused ? Colors.primary : Colors.tabBarInactive}
+        color={focused ? activeColor : Colors.tabBarInactive}
       />
       <Text
         style={[
           S.tabLabel,
-          focused ? S.tabLabelActive : S.tabLabelInactive,
+          focused ? { color: activeColor, fontFamily: FontFamily.semiBold } : S.tabLabelInactive,
         ]}
       >
         {label}
       </Text>
-      {focused && <View style={S.tabDot} />}
+      {focused && <View style={[S.tabDot, { backgroundColor: activeColor }]} />}
     </View>
   );
 }
@@ -94,7 +96,8 @@ function TabIcon({
 // ─── Main bottom-tab navigator ──────────────────────────────────────────────
 
 function MainTabNavigator() {
-  const { activeChamaType } = useChamaContext();
+  const { activeChamaType, activeChamaColor } = useChamaContext();
+  const themeColor = activeChamaColor || Colors.primary;
 
   return (
     <Tab.Navigator
@@ -109,7 +112,7 @@ function MainTabNavigator() {
         component={DashboardScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="home" label="Home" focused={focused} />
+            <TabIcon icon="home" label="Home" focused={focused} activeColor={themeColor} />
           ),
         }}
       />
@@ -118,7 +121,7 @@ function MainTabNavigator() {
         component={MembersScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="users" label="Members" focused={focused} />
+            <TabIcon icon="users" label="Members" focused={focused} activeColor={themeColor} />
           ),
         }}
       />
@@ -130,7 +133,7 @@ function MainTabNavigator() {
           component={PortfolioScreen}
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="bar-chart-2" label="Portfolio" focused={focused} />
+              <TabIcon icon="bar-chart-2" label="Portfolio" focused={focused} activeColor={themeColor} />
             ),
           }}
         />
@@ -140,7 +143,7 @@ function MainTabNavigator() {
           component={FundsScreen}
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="sliders" label="Funds" focused={focused} />
+              <TabIcon icon="sliders" label="Funds" focused={focused} activeColor={themeColor} />
             ),
           }}
         />
@@ -150,7 +153,7 @@ function MainTabNavigator() {
           component={DealsScreen}
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="shopping-bag" label="Deals" focused={focused} />
+              <TabIcon icon="shopping-bag" label="Deals" focused={focused} activeColor={themeColor} />
             ),
           }}
         />
@@ -161,7 +164,7 @@ function MainTabNavigator() {
           component={GroupLoanScreen}
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="dollar-sign" label="Loans" focused={focused} />
+              <TabIcon icon="dollar-sign" label="Loans" focused={focused} activeColor={themeColor} />
             ),
           }}
         />
@@ -172,7 +175,7 @@ function MainTabNavigator() {
         component={MemberCreditProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="star" label="Score" focused={focused} />
+            <TabIcon icon="star" label="Score" focused={focused} activeColor={themeColor} />
           ),
         }}
       />
@@ -181,7 +184,7 @@ function MainTabNavigator() {
         component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="menu" label="More" focused={focused} />
+            <TabIcon icon="menu" label="More" focused={focused} activeColor={themeColor} />
           ),
         }}
       />
@@ -195,7 +198,7 @@ export default function AppNavigator() {
   return (
     <ChamaProvider>
       <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: "slide_from_right", animationDuration: 280 }}>
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />

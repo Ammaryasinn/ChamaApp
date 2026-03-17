@@ -6,6 +6,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily } from "../theme";
+import { useChamaContext } from "../context/ChamaContext";
 
 // Map route names to friendly copy
 const COPY: Record<string, { icon: React.ComponentProps<typeof Feather>["name"]; title: string; sub: string }> = {
@@ -16,15 +17,17 @@ const COPY: Record<string, { icon: React.ComponentProps<typeof Feather>["name"];
 };
 
 export default function PlaceholderScreen({ navigation, route }: any) {
+  const { activeChamaColor } = useChamaContext();
+  const heroBg = activeChamaColor || Colors.primary;
   const key = route?.name ?? "Placeholder";
   const copy = COPY[key] ?? COPY["Placeholder"];
 
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: heroBg }]}>
       <StatusBar style="light" />
 
       {/* Hero */}
-      <View style={S.hero}>
+      <View style={[S.hero, { backgroundColor: heroBg }]}>
         <View style={S.circleTR} />
         <View style={S.circleBL} />
         <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
@@ -35,7 +38,7 @@ export default function PlaceholderScreen({ navigation, route }: any) {
       {/* Body */}
       <View style={S.body}>
         <View style={S.iconWrap}>
-          <Feather name={copy.icon} size={36} color={Colors.primary} />
+          <Feather name={copy.icon} size={36} color={heroBg} />
         </View>
         <Text style={S.title}>{copy.title}</Text>
         <Text style={S.sub}>{copy.sub}</Text>
@@ -47,9 +50,9 @@ export default function PlaceholderScreen({ navigation, route }: any) {
           </View>
         </View>
 
-        <TouchableOpacity style={S.backBtnBody} onPress={() => navigation.goBack()} activeOpacity={0.85}>
-          <Feather name="arrow-left" size={16} color={Colors.primary} />
-          <Text style={S.backBtnText}>Go back</Text>
+        <TouchableOpacity style={[S.backBtnBody, { borderColor: heroBg, backgroundColor: heroBg + "18" }]} onPress={() => navigation.goBack()} activeOpacity={0.85}>
+          <Feather name="arrow-left" size={16} color={heroBg} />
+          <Text style={[S.backBtnText, { color: heroBg }]}>Go back</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

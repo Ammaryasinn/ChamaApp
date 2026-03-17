@@ -11,14 +11,20 @@ import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
 
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen";
+
 export default function FundsScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
 
       <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]} bounces={false}>
         {/* ── HERO HEADER ── */}
-        <View style={S.hero}>
+        <View style={[S.hero, { backgroundColor: themeColor }]}>
           <View style={S.circleTopRight} />
           
           <View style={S.heroNav}>
@@ -101,9 +107,9 @@ export default function FundsScreen({ navigation }: any) {
 }
 
 const S = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#006D5B" },
+  screen: { flex: 1 },
 
-  hero: { backgroundColor: "#006D5B", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: "hidden" },
+  hero: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: "hidden" },
   circleTopRight: { position: "absolute", width: 260, height: 260, borderRadius: 130, backgroundColor: "rgba(255,255,255,0.05)", top: -80, right: -40 },
   
   heroNav: { flexDirection: "row", alignItems: "center", marginBottom: 24, gap: 12 },

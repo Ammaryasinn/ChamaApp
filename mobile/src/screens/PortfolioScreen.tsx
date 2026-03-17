@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Pressable,
+  Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -17,14 +19,21 @@ const HOLDINGS = [
   { id: "3", name: "CIC Unit Trust", sub: "Money market fund", value: "Ksh 340,000", ret: "+11.1%", retRaw: "+Ksh 34,000", color: "#F59E0B" },
 ];
 
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen";
+
 export default function PortfolioScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
+  const [activeTab, setActiveTab] = useState<"Holdings" | "Returns" | "History">("Holdings");
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
 
       <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]} bounces={false}>
         {/* ── HERO HEADER ── */}
-        <View style={S.hero}>
+        <View style={[S.hero, { backgroundColor: themeColor }]}>
           <View style={S.circleTopRight} />
           
           <View style={S.heroNav}>
@@ -65,69 +74,97 @@ export default function PortfolioScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Tab Switcher (fake static) */}
+          {/* Tab Switcher */}
           <View style={S.tabSwitcher}>
-            <View style={[S.tabOpt, S.tabOptActive]}><Text style={[S.tabOptText, S.tabOptTextActive]}>Holdings</Text></View>
-            <View style={S.tabOpt}><Text style={S.tabOptText}>Returns</Text></View>
-            <View style={S.tabOpt}><Text style={S.tabOptText}>History</Text></View>
+            {(["Holdings", "Returns", "History"] as const).map(t => (
+              <Pressable key={t} style={[S.tabOpt, activeTab === t && S.tabOptActive]} onPress={() => setActiveTab(t)}>
+                <Text style={[S.tabOptText, activeTab === t && S.tabOptTextActive]}>{t}</Text>
+              </Pressable>
+            ))}
           </View>
 
-          {/* Holdings */}
-          <View style={S.section}>
-            <View style={S.sectionHeader}>
-              <Text style={S.sectionTitle}>Current holdings</Text>
-              <TouchableOpacity><Text style={S.seeAll}>Full report</Text></TouchableOpacity>
-            </View>
-            
-            <View style={S.portList}>
+          {/* Holdings Tab */}
+          {activeTab === "Holdings" && (
+            <>
+              <View style={S.section}>
+                <View style={S.sectionHeader}>
+                  <Text style={S.sectionTitle}>Current holdings</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate("PremiumSubscription")}>
+                    <Text style={S.seeAll}>Full report</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={S.portList}>
+                  {HOLDINGS.map(p => (
+                    <View key={p.id} style={S.portItem}>
+                      <View style={[S.portDot, { backgroundColor: p.color }]} />
+                      <View style={S.actMeta}>
+                        <Text style={S.actName}>{p.name}</Text>
+                        <Text style={S.actSub}>{p.sub}</Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={S.actAmt}>{p.value}</Text>
+                        <Text style={[S.actSub, { color: "#059669", fontWeight: "700" }]}>{p.ret} · {p.retRaw}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <View style={S.section}>
+                <View style={S.sectionHeader}>
+                  <Text style={S.sectionTitle}>Pending vote</Text>
+                  <Text style={{ fontFamily: FontFamily.heading, fontSize: 13, color: themeColor, fontWeight: "700" }}>1 of 2</Text>
+                </View>
+                <View style={S.voteCard}>
+                  <Text style={S.voteLabel}>PROPOSAL · 3 DAYS LEFT</Text>
+                  <Text style={S.voteTitle}>Invest Ksh 200,000 in additional Equity Bank shares on NSE</Text>
+                  <View style={S.voteTallyRow}>
+                    <View style={[S.voteTally, { backgroundColor: "#ECFDF5" }]}><Text style={[S.vtNum, { color: "#059669" }]}>7</Text><Text style={[S.vtLbl, { color: "#059669" }]}>Yes</Text></View>
+                    <View style={[S.voteTally, { backgroundColor: "#FEF2F2" }]}><Text style={[S.vtNum, { color: "#DC2626" }]}>2</Text><Text style={[S.vtLbl, { color: "#DC2626" }]}>No</Text></View>
+                    <View style={[S.voteTally, { backgroundColor: "#F9FAFB" }]}><Text style={[S.vtNum, { color: "#9CA3AF" }]}>3</Text><Text style={[S.vtLbl, { color: "#9CA3AF" }]}>Pending</Text></View>
+                  </View>
+                  <View style={S.voteBtns}>
+                    <TouchableOpacity style={S.voteApprove} onPress={() => Alert.alert("✓ Voted", "Your approval has been recorded.")}>  
+                      <Text style={S.voteApproveText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={S.voteDecline} onPress={() => Alert.alert("✗ Voted", "Your decline has been recorded.")}>  
+                      <Text style={S.voteDeclineText}>Decline</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* Returns Tab */}
+          {activeTab === "Returns" && (
+            <View style={S.section}>
+              <Text style={S.sectionTitle}>Annual returns</Text>
               {HOLDINGS.map(p => (
-                <View key={p.id} style={S.portItem}>
+                <View key={p.id} style={[S.portItem, { marginTop: 12 }]}>
                   <View style={[S.portDot, { backgroundColor: p.color }]} />
                   <View style={S.actMeta}>
                     <Text style={S.actName}>{p.name}</Text>
                     <Text style={S.actSub}>{p.sub}</Text>
                   </View>
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text style={S.actAmt}>{p.value}</Text>
-                    <Text style={[S.actSub, { color: "#059669", fontWeight: "700" }]}>{p.ret} · {p.retRaw}</Text>
-                  </View>
+                  <Text style={[S.actSub, { color: "#059669", fontWeight: "700" }]}>{p.ret}</Text>
                 </View>
               ))}
             </View>
-          </View>
+          )}
 
-          {/* Pending Vote */}
-          <View style={S.section}>
-            <View style={S.sectionHeader}>
-              <Text style={S.sectionTitle}>Pending vote</Text>
-              <Text style={{ fontFamily: FontFamily.heading, fontSize: 13, color: Colors.primary, fontWeight: "700" }}>1 of 2</Text>
+          {/* History Tab */}
+          {activeTab === "History" && (
+            <View style={S.section}>
+              <Text style={S.sectionTitle}>Transaction history</Text>
+              {[("NSE Shares purchase — Mar 2024"), ("Rongai land deposit — Jun 2024"), ("CIC Unit Trust — Dec 2024")].map((item, i) => (
+                <View key={i} style={[S.portItem, { marginTop: 12 }]}>
+                  <View style={[S.portDot, { backgroundColor: ["#3B82F6", "#8B5CF6", "#F59E0B"][i] }]} />
+                  <Text style={S.actName}>{item}</Text>
+                </View>
+              ))}
             </View>
-            
-            <View style={S.voteCard}>
-              <Text style={S.voteLabel}>PROPOSAL · 3 DAYS LEFT</Text>
-              <Text style={S.voteTitle}>Invest Ksh 200,000 in additional Equity Bank shares on NSE</Text>
-              
-              <View style={S.voteTallyRow}>
-                <View style={[S.voteTally, { backgroundColor: "#ECFDF5" }]}>
-                  <Text style={[S.vtNum, { color: "#059669" }]}>7</Text>
-                  <Text style={[S.vtLbl, { color: "#059669" }]}>Yes</Text>
-                </View>
-                <View style={[S.voteTally, { backgroundColor: "#FEF2F2" }]}>
-                  <Text style={[S.vtNum, { color: "#DC2626" }]}>2</Text>
-                  <Text style={[S.vtLbl, { color: "#DC2626" }]}>No</Text>
-                </View>
-                <View style={[S.voteTally, { backgroundColor: "#F9FAFB" }]}>
-                  <Text style={[S.vtNum, { color: "#9CA3AF" }]}>3</Text>
-                  <Text style={[S.vtLbl, { color: "#9CA3AF" }]}>Pending</Text>
-                </View>
-              </View>
-
-              <View style={S.voteBtns}>
-                <TouchableOpacity style={S.voteApprove}><Text style={S.voteApproveText}>Approve</Text></TouchableOpacity>
-                <TouchableOpacity style={S.voteDecline}><Text style={S.voteDeclineText}>Decline</Text></TouchableOpacity>
-              </View>
-            </View>
-          </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -135,9 +172,9 @@ export default function PortfolioScreen({ navigation }: any) {
 }
 
 const S = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#0A1F18" },
+  screen: { flex: 1 },
 
-  hero: { backgroundColor: "#0A1F18", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: "hidden" },
+  hero: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, overflow: "hidden" },
   circleTopRight: { position: "absolute", width: 260, height: 260, borderRadius: 130, backgroundColor: "rgba(255,255,255,0.03)", top: -80, right: -80 },
   
   heroNav: { flexDirection: "row", alignItems: "center", marginBottom: 24, gap: 12 },

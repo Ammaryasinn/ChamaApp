@@ -6,6 +6,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily } from "../theme";
+import { useChamaContext } from "../context/ChamaContext";
 
 type NotifType = "payment" | "loan" | "vote" | "system" | "reminder";
 
@@ -32,6 +33,9 @@ const TYPE_ICON: Record<NotifType, { icon: React.ComponentProps<typeof Feather>[
 };
 
 export default function NotificationsScreen({ navigation }: any) {
+  const { activeChamaColor } = useChamaContext();
+  const heroBg = activeChamaColor || Colors.primary;
+
   const [notifs, setNotifs] = useState(NOTIFS);
 
   const markAllRead = () => setNotifs(n => n.map(x => ({ ...x, read: true })));
@@ -42,7 +46,7 @@ export default function NotificationsScreen({ navigation }: any) {
       <StatusBar style="light" />
 
       {/* Hero */}
-      <View style={S.hero}>
+      <View style={[S.hero, { backgroundColor: heroBg }]}>
         <View style={S.circleTR} />
         <View style={S.heroNav}>
           <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
@@ -77,7 +81,7 @@ export default function NotificationsScreen({ navigation }: any) {
                 <Text style={S.body}>{n.body}</Text>
                 <Text style={S.time}>{n.time}</Text>
               </View>
-              {!n.read && <View style={S.dot} />}
+              {!n.read && <View style={[S.dot, { backgroundColor: heroBg }]} />}
             </TouchableOpacity>
           );
         })}

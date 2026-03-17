@@ -19,6 +19,8 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { apiClient } from "../api/client";
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen";
 
 const MOCK_MEMBERS = [
   {
@@ -110,8 +112,12 @@ function StatusBadge({
 }
 
 export default function ContributionDayScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
+
   const [members, setMembers] = useState<any[]>(MOCK_MEMBERS);
-  const [chama, setChama] = useState<any>(null);
+  const [apiChama, setApiChama] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [collectingId, setCollectingId] = useState<string | null>(null);
 
@@ -121,7 +127,7 @@ export default function ContributionDayScreen({ navigation }: any) {
         const chamasRes = await apiClient.get("/chamas");
         if (chamasRes.data.length === 0) return;
         const activeChama = chamasRes.data[0];
-        setChama(activeChama);
+        setApiChama(activeChama);
 
         const cyclesRes = await apiClient.get(
           `/chamas/${activeChama.id}/cycles`,
@@ -150,13 +156,13 @@ export default function ContributionDayScreen({ navigation }: any) {
     totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0;
 
   const handleCollect = async (member: any) => {
-    if (!chama) return;
+    if (!apiChama) return;
     setCollectingId(member.id);
     try {
       await apiClient.post("/mpesa/stkpush", {
         phoneNumber: member.phoneNumber || "+254700000000",
         amount: member.amount || 5000,
-        chamaId: chama.id,
+        chamaId: apiChama.id,
       });
       alert("STK Push sent! Ask the member to check their phone.");
     } catch {
@@ -167,11 +173,11 @@ export default function ContributionDayScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
 
       {/* Dark Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: themeColor }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Back</Text>
         </Pressable>
@@ -188,7 +194,7 @@ export default function ContributionDayScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         {/* Summary Card */}
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: themeColor }]}>
           <Text style={styles.summaryAmount}>Ksh 5,000 per member</Text>
           <Text style={styles.summaryPotLabel}>
             Pot size this month:{" "}
@@ -229,7 +235,7 @@ export default function ContributionDayScreen({ navigation }: any) {
         </View>
 
         {/* Collect Button */}
-        <Pressable style={styles.collectBtn}>
+        <Pressable style={[styles.collectBtn, { backgroundColor: themeColor }]}>
           <Text style={styles.collectBtnText}>Collect via M-Pesa STK push</Text>
         </Pressable>
 
@@ -310,10 +316,8 @@ export default function ContributionDayScreen({ navigation }: any) {
         </View>
 
         {/* Mark Complete */}
-        <Pressable style={styles.markCompleteBtn}>
-          <Text style={styles.markCompleteBtnText}>
-            Mark collection complete
-          </Text>
+        <Pressable style={[styles.markCompleteBtn, { borderColor: themeColor }]}>
+          <Text style={[styles.markCompleteBtnText, { color: themeColor }]}>Mark collection complete</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

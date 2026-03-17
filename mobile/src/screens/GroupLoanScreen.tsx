@@ -19,16 +19,23 @@ function HeroCircles() {
 const TABS = ["Active", "Vote", "History"] as const;
 type Tab = typeof TABS[number];
 
+import { useChamaContext } from "../context/ChamaContext";
+import { MY_CHAMAS } from "./DashboardScreen";
+
 export default function GroupLoanScreen({ navigation }: any) {
+  const { activeChamaId } = useChamaContext();
+  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
+  const themeColor = chama.heroColor;
+
   const [tab, setTab] = useState<Tab>("Active");
   const [voted, setVoted] = useState<"approve" | "decline" | null>(null);
 
   return (
-    <SafeAreaView style={S.screen}>
+    <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
 
       {/* Hero */}
-      <View style={S.hero}>
+      <View style={[S.hero, { backgroundColor: themeColor }]}>
         <HeroCircles />
         <View style={S.heroNav}>
           <Pressable onPress={() => navigation.goBack()} style={S.backBtn} hitSlop={12}>
@@ -48,7 +55,11 @@ export default function GroupLoanScreen({ navigation }: any) {
       {/* Tabs */}
       <View style={S.tabRow}>
         {TABS.map((t) => (
-          <Pressable key={t} style={[S.tabBtn, tab === t && S.tabBtnActive]} onPress={() => setTab(t)}>
+          <Pressable
+            key={t}
+            style={[S.tabBtn, tab === t && { ...S.tabBtnActive, backgroundColor: themeColor }]}
+            onPress={() => setTab(t)}
+          >
             <Text style={[S.tabBtnText, tab === t && S.tabBtnTextActive]}>{t}</Text>
           </Pressable>
         ))}
@@ -96,6 +107,30 @@ export default function GroupLoanScreen({ navigation }: any) {
                 </>
               )}
             </View>
+          </View>
+        )}
+
+        {/* History tab */}
+        {tab === "History" && (
+          <View style={{ paddingBottom: 12 }}>
+            {[
+              { name: "Wanjiru Kamau", amount: "Ksh 10,000", period: "Repaid · Jan 2026", icon: "check", color: "#059669", bg: "#ECFDF5" },
+              { name: "Akinyi Otieno", amount: "Ksh 8,000", period: "Repaid · Dec 2025", icon: "check", color: "#059669", bg: "#ECFDF5" },
+              { name: "Kamau Otieno", amount: "Ksh 15,000", period: "Defaulted · Nov 2025", icon: "x", color: "#DC2626", bg: "#FEF2F2" },
+            ].map((loan, i) => (
+              <View key={i} style={S.activeLoanCard}>
+                <View style={S.activeLoanTop}>
+                  <View style={[{ width: 32, height: 32, borderRadius: 16, backgroundColor: loan.bg, alignItems: "center", justifyContent: "center" }]}>
+                    <Feather name={loan.icon as any} size={14} color={loan.color} />
+                  </View>
+                  <View style={[S.activeLoanMeta, { flex: 1, marginLeft: 12 }]}>
+                    <Text style={S.activeLoanName}>{loan.name}</Text>
+                    <Text style={S.activeLoanPurpose}>{loan.period}</Text>
+                  </View>
+                  <Text style={[S.activeLoanAmtLarge, { fontSize: 15, color: loan.color }]}>{loan.amount}</Text>
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
@@ -152,7 +187,7 @@ const S = StyleSheet.create({
   // Tabs
   tabRow: { flexDirection: "row", backgroundColor: "#FFFFFF", paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   tabBtn: { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 7, backgroundColor: "#F6F9F7", borderWidth: 1, borderColor: "#EBF1EF" },
-  tabBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  tabBtnActive: { borderColor: Colors.primary },
   tabBtnText:   { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.textMuted },
   tabBtnTextActive: { color: "#FFFFFF", fontFamily: FontFamily.heading, fontWeight: "700" },
 
