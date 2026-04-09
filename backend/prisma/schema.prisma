@@ -12,6 +12,7 @@ enum ChamaType {
   investment
   welfare
   hybrid
+  group_purchase
 }
 
 enum ContributionFrequency {
@@ -121,6 +122,12 @@ model User {
   phoneNumber            String          @unique @map("phone_number") @db.VarChar(15)
   fullName               String          @map("full_name") @db.VarChar(100)
   nationalId             String?         @map("national_id") @db.VarChar(20)
+  dob                    DateTime?       @db.Date
+  gender                 String?         @db.VarChar(20)
+  occupation             String?         @db.VarChar(100)
+  city                   String?         @db.VarChar(100)
+  estate                 String?         @db.VarChar(100)
+  kraPin                 String?         @map("kra_pin") @db.VarChar(20)
   profilePhotoUrl        String?         @map("profile_photo_url")
   isVerified             Boolean         @default(false) @map("is_verified")
   createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -151,6 +158,7 @@ model Chama {
   id                       String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                     String                  @db.VarChar(100)
   description              String?
+  avatarUrl                String?                 @map("avatar_url")
   chamaType                ChamaType               @map("chama_type")
   mgrPercentage            Int                     @default(0) @map("mgr_percentage")
   investmentPercentage     Int                     @default(0) @map("investment_percentage")
@@ -178,6 +186,7 @@ model Chama {
   mgrScheduleEntries       MgrSchedule[]
   swapRequests             SwapRequest[]
   auditLogs                AuditLog[]
+  notifications            Notification[]
 
   @@map("chamas")
 }
@@ -405,4 +414,25 @@ model BankLoanOffer {
   creditScore        CreditScore         @relation(fields: [creditScoreId], references: [id])
 
   @@map("bank_loan_offers")
+}
+
+enum NotificationType {
+  announcement
+  reminder
+  vote
+  alert
+}
+
+model Notification {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chamaId   String           @map("chama_id") @db.Uuid
+  title     String           @db.VarChar(100)
+  message   String           @db.Text
+  type      NotificationType @default(announcement)
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  chama     Chama            @relation(fields: [chamaId], references: [id])
+
+  @@map("notifications")
 }

@@ -38,6 +38,7 @@ const express_1 = require("express");
 const zod_1 = require("zod");
 const chamaService = __importStar(require("../services/chama.service"));
 const memberService = __importStar(require("../services/member.service"));
+const prisma_1 = require("../lib/prisma");
 const auth_1 = require("../middleware/auth");
 const error_1 = require("../middleware/error");
 const cycle_routes_1 = require("./cycle.routes");
@@ -95,6 +96,24 @@ exports.chamaRouter.put("/:id", auth_1.authMiddleware, (0, error_1.asyncHandler)
     const data = schema.parse(req.body);
     const chama = await chamaService.updateChama(req.params.id, req.user.userId, data);
     res.status(200).json(chama);
+}));
+// Broadcast message (protected, chairperson only)
+exports.chamaRouter.post("/:id/broadcast", auth_1.authMiddleware, (0, error_1.asyncHandler)(async (req, res) => {
+    const schema = zod_1.z.object({
+        message: zod_1.z.string().min(1),
+    });
+    const { message } = schema.parse(req.body);
+    await prisma_1.prisma.notification.create({
+        data: {
+            chamaId: req.params.id,
+            title: "Announcement",
+            message,
+            type: "announcement",
+        },
+    });
+    // Logic to save announcement or push notification would go here.
+    // For now we just return success.
+    res.status(200).json({ success: true, message: "Message broadcasted successfully." });
 }));
 // Add member (protected, chairperson only)
 exports.chamaRouter.post("/:id/members", auth_1.authMiddleware, (0, error_1.asyncHandler)(async (req, res) => {

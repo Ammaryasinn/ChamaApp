@@ -6,6 +6,16 @@ export class MgrService {
   /**
    * Generates initial random MGR schedule
    */
+  public static async getSchedule(chamaId: string) {
+    return await prisma.mgrSchedule.findMany({
+      where: { chamaId },
+      include: {
+        chamaMember: { include: { user: { select: { fullName: true, profilePhotoUrl: true } } } },
+      },
+      orderBy: { cycleNumber: "asc" },
+    });
+  }
+
   public static async generateSchedule(chamaId: string, actedById: string) {
     const members = await prisma.chamaMember.findMany({
       where: { chamaId, status: 'active' },

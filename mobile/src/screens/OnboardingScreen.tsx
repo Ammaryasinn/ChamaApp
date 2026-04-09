@@ -22,7 +22,7 @@ import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
 function HazinaLogo({ size = 22 }: { size?: number }) {
   return (
     <Text style={[S.logo, { fontSize: size }]}>
-      <Text style={{ color: "#FFFFFF" }}>Hazi</Text>
+      <Text style={{ color: "#E8D6B5" }}>Hazi</Text>
       <Text style={{ color: "#F59E0B" }}>na</Text>
     </Text>
   );
@@ -85,7 +85,11 @@ function Field({
         children
       ) : (
         <TextInput
-          style={[S.fieldInput, focused && S.fieldInputFocused, { outlineStyle: "none" } as any]}
+          style={[
+            S.fieldInput,
+            focused && S.fieldInputFocused,
+            { outlineStyle: "none" } as any,
+          ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -132,13 +136,59 @@ function PhoneField({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen({ navigation }: any) {
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Step 1
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [nationalId, setNationalId] = useState("");
-  const canContinue = name.trim().length > 0;
+
+  // Step 2
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("");
+  const [occupation, setOccupation] = useState("");
+
+  // Step 3
+  const [city, setCity] = useState("");
+  const [estate, setEstate] = useState("");
+  const [kraPin, setKraPin] = useState("");
+
+  const canContinue = () => {
+    if (currentStep === 1)
+      return (
+        name.trim().length > 0 &&
+        phone.trim().length > 0 &&
+        nationalId.trim().length > 0
+      );
+    if (currentStep === 2)
+      return (
+        dob.trim().length > 0 &&
+        gender.trim().length > 0 &&
+        occupation.trim().length > 0
+      );
+    if (currentStep === 3)
+      return (
+        city.trim().length > 0 &&
+        estate.trim().length > 0 &&
+        kraPin.trim().length > 0
+      );
+    return false;
+  };
 
   const handleContinue = () => {
-    navigation.navigate("Welcome"); // Navigate to the Join/Create fork
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      navigation.navigate("Welcome"); // Navigate to the Join/Create fork
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      navigation.goBack();
+    }
   };
 
   return (
@@ -148,16 +198,12 @@ export default function OnboardingScreen({ navigation }: any) {
       {/* Hero */}
       <View style={S.hero}>
         <HeroCircles />
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={S.backBtn}
-          hitSlop={12}
-        >
+        <Pressable onPress={handleBack} style={S.backBtn} hitSlop={12}>
           <Feather name="chevron-left" size={18} color="#fff" />
         </Pressable>
         <Text style={S.heroTitle}>Create account</Text>
-        <ProgressBar step={1} total={3} />
-        <StepDots step={1} total={3} />
+        <ProgressBar step={currentStep} total={3} />
+        <StepDots step={currentStep} total={3} />
       </View>
 
       {/* Content */}
@@ -170,42 +216,114 @@ export default function OnboardingScreen({ navigation }: any) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={S.sectionTitle}>Your details</Text>
-          <Text style={S.sectionSub}>Step 1 of 3 · Personal information</Text>
+          <Text style={S.sectionTitle}>
+            {currentStep === 1 && "Your details"}
+            {currentStep === 2 && "Demographics"}
+            {currentStep === 3 && "Location & Identity"}
+          </Text>
+          <Text style={S.sectionSub}>
+            Step {currentStep} of 3 ·{" "}
+            {currentStep === 1
+              ? "Personal information"
+              : currentStep === 2
+                ? "Background information"
+                : "Additional details"}
+          </Text>
 
-          {/* Avatar */}
-          <View style={S.avatarWrap}>
-            <View style={S.avatarCircle}>
-              <Feather name="user" size={28} color="#2E9E87" />
-            </View>
-          </View>
+          {currentStep === 1 && (
+            <>
+              {/* Avatar */}
+              <View style={S.avatarWrap}>
+                <View style={S.avatarCircle}>
+                  <Feather name="user" size={28} color="#2E9E87" />
+                </View>
+              </View>
 
-          {/* Fields */}
-          <Field
-            label="FULL NAME"
-            placeholder="Wanjiru Kamau"
-            value={name}
-            onChangeText={setName}
-          />
+              {/* Fields */}
+              <Field
+                label="FULL NAME"
+                placeholder="Wanjiru Kamau"
+                value={name}
+                onChangeText={setName}
+              />
 
-          <Field label="PHONE NUMBER" placeholder="" value={phone} onChangeText={setPhone}>
-            <PhoneField value={phone} onChangeText={setPhone} />
-          </Field>
+              <Field
+                label="PHONE NUMBER"
+                placeholder=""
+                value={phone}
+                onChangeText={setPhone}
+              >
+                <PhoneField value={phone} onChangeText={setPhone} />
+              </Field>
 
-          <Field
-            label="NATIONAL ID"
-            placeholder="Enter your ID number"
-            value={nationalId}
-            onChangeText={setNationalId}
-            keyboardType="number-pad"
-          />
+              <Field
+                label="NATIONAL ID"
+                placeholder="Enter your ID number"
+                value={nationalId}
+                onChangeText={setNationalId}
+                keyboardType="number-pad"
+              />
+            </>
+          )}
+
+          {currentStep === 2 && (
+            <>
+              <Field
+                label="DATE OF BIRTH"
+                placeholder="DD/MM/YYYY"
+                value={dob}
+                onChangeText={setDob}
+              />
+
+              <Field
+                label="GENDER"
+                placeholder="Male, Female, etc."
+                value={gender}
+                onChangeText={setGender}
+              />
+
+              <Field
+                label="OCCUPATION"
+                placeholder="E.g. Teacher, Engineer"
+                value={occupation}
+                onChangeText={setOccupation}
+              />
+            </>
+          )}
+
+          {currentStep === 3 && (
+            <>
+              <Field
+                label="CITY / TOWN"
+                placeholder="Nairobi, Mombasa, etc."
+                value={city}
+                onChangeText={setCity}
+              />
+
+              <Field
+                label="ESTATE / NEIGHBORHOOD"
+                placeholder="Kilimani, Karen, etc."
+                value={estate}
+                onChangeText={setEstate}
+              />
+
+              <Field
+                label="KRA PIN (OPTIONAL)"
+                placeholder="A000000000Z"
+                value={kraPin}
+                onChangeText={setKraPin}
+              />
+            </>
+          )}
 
           <TouchableOpacity
-            style={[S.btnPrimary, !canContinue && S.btnDisabled]}
-            onPress={canContinue ? handleContinue : undefined}
+            style={[S.btnPrimary, !canContinue() && S.btnDisabled]}
+            onPress={canContinue() ? handleContinue : undefined}
             activeOpacity={0.85}
           >
-            <Text style={S.btnPrimaryText}>Continue</Text>
+            <Text style={S.btnPrimaryText}>
+              {currentStep === 3 ? "Complete" : "Continue"}
+            </Text>
             <Feather name="arrow-right" size={18} color="#fff" />
           </TouchableOpacity>
         </ScrollView>
@@ -265,7 +383,7 @@ const S = StyleSheet.create({
   heroTitle: {
     fontFamily: FontFamily.extraBold,
     fontSize: FontSize["3xl"],
-    color: "#FFFFFF",
+    color: "#E8D6B5",
     fontWeight: "800",
   },
 
@@ -304,7 +422,7 @@ const S = StyleSheet.create({
 
   // ── Content ───────────────────────────────────────────────────────────────
   scrollContent: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing[6],
     paddingTop: Spacing[6],
     paddingBottom: Spacing[10],
@@ -313,7 +431,7 @@ const S = StyleSheet.create({
   sectionTitle: {
     fontFamily: FontFamily.extraBold,
     fontSize: 18,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontWeight: "800",
     marginBottom: 4,
   },
@@ -362,7 +480,7 @@ const S = StyleSheet.create({
     paddingHorizontal: Spacing[4],
     fontFamily: FontFamily.regular,
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
   fieldInputFocused: {
     borderColor: Colors.primary,
@@ -387,15 +505,20 @@ const S = StyleSheet.create({
   prefix: {
     fontFamily: FontFamily.medium,
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     marginRight: Spacing[3],
   },
-  phoneDivider: { width: 1, height: 20, backgroundColor: "#EBF1EF", marginRight: Spacing[3] },
+  phoneDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#EBF1EF",
+    marginRight: Spacing[3],
+  },
   phoneInput: {
     flex: 1,
     fontFamily: FontFamily.regular,
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
 
   // Button
@@ -412,7 +535,7 @@ const S = StyleSheet.create({
   btnPrimaryText: {
     fontFamily: FontFamily.heading,
     fontSize: FontSize.lg,
-    color: "#FFFFFF",
+    color: "#E8D6B5",
     fontWeight: "700",
   },
   btnDisabled: { opacity: 0.45 },

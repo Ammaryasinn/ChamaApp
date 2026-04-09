@@ -25,12 +25,12 @@ const SCORE_DATA = [
 ];
 
 import { useChamaContext } from "../context/ChamaContext";
-import { MY_CHAMAS } from "./DashboardScreen";
+// Mock data completely removed
 
 export default function MemberCreditProfileScreen({ navigation }: any) {
-  const { activeChamaId } = useChamaContext();
-  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
-  const themeColor = chama.heroColor;
+  const { activeChamaId, chamas } = useChamaContext();
+  const chama = chamas.find((c: any) => c.id === activeChamaId) || chamas[0];
+  const themeColor = chama?.heroColor || Colors.primary;
   return (
     <SafeAreaView style={[S.screen, { backgroundColor: themeColor }]}>
       <StatusBar style="light" />
@@ -111,32 +111,32 @@ const S = StyleSheet.create({
   hero: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 30, overflow: "hidden", alignItems: "center" },
   heroNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", alignSelf: "stretch", marginBottom: 12 },
   backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 18, color: "#FFFFFF", fontWeight: "800" },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 18, color: "#E8D6B5", fontWeight: "800" },
 
-  scoreNumber: { fontFamily: FontFamily.extraBold, fontSize: 72, color: "#FFFFFF", fontWeight: "800", letterSpacing: -2, lineHeight: 80 },
+  scoreNumber: { fontFamily: FontFamily.extraBold, fontSize: 72, color: "#E8D6B5", fontWeight: "800", letterSpacing: -2, lineHeight: 80 },
   scoreRating: { fontFamily: FontFamily.regular, fontSize: 14, color: "rgba(255,255,255,0.7)", marginBottom: 16 },
 
   rangeWrap: { alignSelf: "stretch" },
   rangeTrack: { height: 8, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 4, overflow: "visible", position: "relative" },
   rangeFill: {
     position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 4,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
   },
   rangeThumb: {
     position: "absolute", top: -5, width: 18, height: 18,
-    borderRadius: 9, backgroundColor: "#FFFFFF", borderWidth: 2.5,
+    borderRadius: 9, backgroundColor: Colors.surface, borderWidth: 2.5,
   },
   rangeLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
   rangeLabelStart: { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
   rangeLabelMid:   { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
   rangeLabelEnd:   { fontFamily: FontFamily.regular, fontSize: 10, color: "rgba(255,255,255,0.5)" },
 
-  body: { backgroundColor: "#FFFFFF", padding: 20, paddingBottom: 100 },
-  sectionTitle: { fontFamily: FontFamily.heading, fontSize: 16, color: Colors.textPrimary, fontWeight: "700", marginBottom: 16 },
+  body: { backgroundColor: Colors.surface, padding: 20, paddingBottom: 100 },
+  sectionTitle: { fontFamily: FontFamily.heading, fontSize: 16, color: "#E8D6B5", fontWeight: "700", marginBottom: 16 },
 
   scoreRow: { marginBottom: 16 },
   scoreRowTop: { flexDirection: "row", alignItems: "center", marginBottom: 5 },
-  scoreLabel:  { flex: 1, fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textPrimary },
+  scoreLabel:  { flex: 1, fontFamily: FontFamily.regular, fontSize: 13, color: "#E8D6B5" },
   scoreWeight: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.textMuted, marginRight: 8 },
   scoreVal:    { fontFamily: FontFamily.heading, fontSize: 14, fontWeight: "700", minWidth: 28, textAlign: "right" },
   barTrack: { height: 6, backgroundColor: "#EBF1EF", borderRadius: 3, overflow: "hidden" },
@@ -147,9 +147,9 @@ const S = StyleSheet.create({
     borderColor: "#A8D8CF", padding: 16, marginTop: 8,
   },
   loanCardTop:   { fontFamily: FontFamily.heading, fontSize: 10, color: "#2E9E87", fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 },
-  loanCardTitle: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700", marginBottom: 2 },
+  loanCardTitle: { fontFamily: FontFamily.heading, fontSize: 14, color: "#E8D6B5", fontWeight: "700", marginBottom: 2 },
   loanAmount:    { fontFamily: FontFamily.extraBold, fontSize: 28, color: Colors.primary, fontWeight: "800", letterSpacing: -0.5 },
   loanTerms:     { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted, marginBottom: 14 },
   applyBtn:      { backgroundColor: Colors.primary, borderRadius: Radius.button, height: 48, alignItems: "center", justifyContent: "center" },
-  applyBtnText:  { fontFamily: FontFamily.heading, fontSize: 14, color: "#FFFFFF", fontWeight: "700" },
+  applyBtnText:  { fontFamily: FontFamily.heading, fontSize: 14, color: "#E8D6B5", fontWeight: "700" },
 });

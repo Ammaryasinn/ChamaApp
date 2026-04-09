@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -10,6 +43,15 @@ class MgrService {
     /**
      * Generates initial random MGR schedule
      */
+    static async getSchedule(chamaId) {
+        return await prisma_1.prisma.mgrSchedule.findMany({
+            where: { chamaId },
+            include: {
+                chamaMember: { include: { user: { select: { fullName: true, profilePhotoUrl: true } } } },
+            },
+            orderBy: { cycleNumber: "asc" },
+        });
+    }
     static async generateSchedule(chamaId, actedById) {
         const members = await prisma_1.prisma.chamaMember.findMany({
             where: { chamaId, status: 'active' },
@@ -20,8 +62,13 @@ class MgrService {
         const existing = await prisma_1.prisma.mgrSchedule.findFirst({ where: { chamaId } });
         if (existing)
             throw new Error('MGR Schedule already exists for this chama');
-        // Shuffle members
-        const shuffled = members.sort(() => 0.5 - Math.random());
+        // Cryptographically secure Fisher-Yates shuffle
+        const crypto = await Promise.resolve().then(() => __importStar(require('crypto')));
+        const shuffled = [...members];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = crypto.randomInt(0, i + 1);
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
         const scheduleData = shuffled.map((member, index) => ({
             chamaId,
             chamaMemberId: member.id,

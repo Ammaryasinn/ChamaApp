@@ -22,6 +22,8 @@ import {
   Shadow,
   Spacing,
 } from "../theme";
+import { chamaApi } from "../lib/api";
+import { Alert, ActivityIndicator } from "react-native";
 
 const LOAN_MULTIPLES = [2, 3, 4, 5];
 const INTEREST_RATES = [5, 8, 10, 12, 15];
@@ -56,6 +58,7 @@ export default function WelfareSetupScreen({ navigation }: any) {
   const [interestRate, setInterestRate] = useState(10);
   const [nameError, setNameError] = useState("");
   const [contribError, setContribError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const contributionNum = parseInt(contribution.replace(/,/g, ""), 10) || 0;
   const maxLoan = contributionNum * loanMultiple;
@@ -66,7 +69,7 @@ export default function WelfareSetupScreen({ navigation }: any) {
     if (contribError) setContribError("");
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     let valid = true;
     if (name.trim().length < 3) {
       setNameError("Group name must be at least 3 characters");
@@ -78,14 +81,39 @@ export default function WelfareSetupScreen({ navigation }: any) {
     }
     if (!valid) return;
 
-    navigation.navigate("InviteMembers", {
-      chamaType: "WELFARE",
-      name: name.trim(),
-      contributionAmount: contributionNum,
-      maxLoanMultiplier: loanMultiple,
-      loanInterestRate: interestRate,
-    });
-    // InviteMembers has a Done → Dashboard button so the flow completes there
+    setLoading(true);
+    try {
+      const newChama = await chamaApi.createChama({
+        name: name.trim(),
+        chamaType: "welfare",
+        contributionAmount: contributionNum,
+        contributionFrequency: "monthly",
+        maxLoanMultiplier: loanMultiple,
+        loanInterestRate: interestRate,
+        penaltyAmount: 0,
+        penaltyGraceDays: 3,
+        meetingDay: 6,
+        minVotesToApproveLoan: 3,
+        mgrPercentage: 0,
+        investmentPercentage: 0,
+        welfarePercentage: 100,
+      });
+      navigation.navigate("InviteMembers", {
+        chamaId: newChama.id,
+        chamaType: "WELFARE",
+        name: name.trim(),
+        contributionAmount: contributionNum,
+        maxLoanMultiplier: loanMultiple,
+        loanInterestRate: interestRate,
+      });
+    } catch (e: any) {
+      Alert.alert(
+        "Error",
+        e?.response?.data?.error || "Failed to create Chama.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const canContinue = name.trim().length >= 3 && contributionNum >= 100;
@@ -99,7 +127,7 @@ export default function WelfareSetupScreen({ navigation }: any) {
       >
         {/* ── Hero ── */}
         <LinearGradient
-          colors={["#071510", "#0A1F18", "#0D2E22"]}
+          colors={["#02120D", "#052118", "#083326"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -339,12 +367,16 @@ export default function WelfareSetupScreen({ navigation }: any) {
           <Pressable
             style={[
               styles.continueBtn,
-              !canContinue && styles.continueBtnDisabled,
+              (!canContinue || loading) && styles.continueBtnDisabled,
             ]}
             onPress={handleContinue}
-            disabled={!canContinue}
+            disabled={!canContinue || loading}
           >
-            <Text style={styles.continueBtnText}>Set up chama →</Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.continueBtnText}>Set up chama →</Text>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -422,7 +454,7 @@ const styles = StyleSheet.create({
 
   // Section titles
   sectionTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -463,7 +495,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.medium,
     fontWeight: FontWeight.medium,
@@ -558,7 +590,7 @@ const styles = StyleSheet.create({
   },
   featureText: { flex: 1 },
   featureTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,

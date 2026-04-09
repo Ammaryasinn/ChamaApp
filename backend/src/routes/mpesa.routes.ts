@@ -1,5 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { MpesaService } from '../services/mpesa.service';
+import { authMiddleware } from '../middleware/auth';
+import { asyncHandler } from '../middleware/error';
+import { z } from 'zod';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
 
@@ -18,6 +22,67 @@ const verifySafaricomIp = (req: Request, res: Response, next: Function) => {
   
   next();
 };
+
+/**
+ * Initiate STK Push
+ * POST /api/mpesa/stkpush
+ */
+router.post(
+  '/stkpush',
+  authMiddleware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const schema = z.object({
+      chamaId: z.string().uuid(),
+      amount: z.number().positive(),
+      phoneNumber: z.string().regex(/^254[17]\d{8}$/, "Must be in format 2547XXXXXXXX or 2541XXXXXXXX"),
+      referenceId: z.string().uuid(),
+      referenceType: z.enum(["contribution", "penalty", "loan_repayment"]),
+      description: z.string().min(1),
+    });
+
+    const data = schema.parse(req.body);
+
+    const result = await MpesaService.sendStkPush({
+      chamaId: data.chamaId,
+      userId: req.user!.userId,
+      phoneNumber: data.phoneNumber,
+      amount: data.amount,
+      referenceId: data.referenceId,
+      referenceType: data.referenceType,
+      description: data.description,
+    });
+
+    if (data.referenceType === "contribution") {
+      await prisma.contribution.updateMany({
+        where: { id: data.referenceId, status: "pending" },
+        data: { status: "stk_sent", stkSentAt: new Date() },
+      });
+    }
+
+    res.status(200).json(result);
+  })
+);
+
+/**
+ * Check Transaction Status
+ * GET /api/mpesa/status/:checkoutRequestId
+ */
+router.get(
+  '/status/:checkoutRequestId',
+  authMiddleware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { checkoutRequestId } = req.params;
+    const transaction = await prisma.transaction.findFirst({
+      where: { mpesaCheckoutRequestId: checkoutRequestId as string, userId: req.user!.userId },
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    res.status(200).json(transaction);
+  })
+);
 
 /**
  * Public Callback endpoint for M-Pesa STK Push

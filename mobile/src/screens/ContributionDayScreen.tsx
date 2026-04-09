@@ -19,8 +19,9 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { apiClient } from "../api/client";
+import { mpesaApi } from "../lib/api";
 import { useChamaContext } from "../context/ChamaContext";
-import { MY_CHAMAS } from "./DashboardScreen";
+// Mock data completely removed
 
 const MOCK_MEMBERS = [
   {
@@ -37,7 +38,7 @@ const MOCK_MEMBERS = [
     id: "2",
     initials: "DK",
     name: "David Kinyua",
-    avatarBg: "#DBEAFE",
+    avatarBg: Colors.surfaceElevated,
     avatarColor: "#1D4ED8",
     status: "pending",
     amount: 5000,
@@ -47,7 +48,7 @@ const MOCK_MEMBERS = [
     id: "3",
     initials: "SN",
     name: "Sarah Njeri",
-    avatarBg: "#FEF3C7",
+    avatarBg: Colors.surfaceElevated,
     avatarColor: "#92400E",
     status: "late",
     amount: 5000,
@@ -58,8 +59,8 @@ const MOCK_MEMBERS = [
     id: "4",
     initials: "AO",
     name: "Alex Otieno",
-    avatarBg: "#F3E8FF",
-    avatarColor: "#7C3AED",
+    avatarBg: Colors.surfaceElevated,
+    avatarColor: Colors.accent,
     status: "paid",
     amount: 5000,
     cycleInfo: "Cycle 4 | Paid",
@@ -112,9 +113,9 @@ function StatusBadge({
 }
 
 export default function ContributionDayScreen({ navigation }: any) {
-  const { activeChamaId } = useChamaContext();
-  const chama = MY_CHAMAS.find((c: any) => c.id === activeChamaId) || MY_CHAMAS[0];
-  const themeColor = chama.heroColor;
+  const { activeChamaId, chamas } = useChamaContext();
+  const chama = chamas.find((c: any) => c.id === activeChamaId) || chamas[0];
+  const themeColor = chama?.heroColor || Colors.primary;
 
   const [members, setMembers] = useState<any[]>(MOCK_MEMBERS);
   const [apiChama, setApiChama] = useState<any>(null);
@@ -159,14 +160,48 @@ export default function ContributionDayScreen({ navigation }: any) {
     if (!apiChama) return;
     setCollectingId(member.id);
     try {
-      await apiClient.post("/mpesa/stkpush", {
-        phoneNumber: member.phoneNumber || "+254700000000",
-        amount: member.amount || 5000,
+      let rawPhone = member.chamaMember?.user?.phoneNumber || member.phoneNumber || "0700000000";
+      if (rawPhone.startsWith("+")) rawPhone = rawPhone.slice(1);
+      if (rawPhone.startsWith("0")) rawPhone = "254" + rawPhone.slice(1);
+      
+      const { CheckoutRequestID } = await mpesaApi.triggerStkPush({
         chamaId: apiChama.id,
+        amount: Number(member.amount || member.expectedAmount || 5000),
+        phoneNumber: rawPhone,
+        referenceId: member.id,
+        referenceType: "contribution",
+        description: `Contribution to ${apiChama.name}`
       });
-      alert("STK Push sent! Ask the member to check their phone.");
-    } catch {
-      alert("Failed to send STK push. Please try again.");
+      
+      alert("STK Push sent! Waiting for payment...");
+      
+      // Start polling
+      let status = "pending";
+      let attempts = 0;
+      while (status === "pending" && attempts < 12) { // 60 seconds (every 5s)
+         await new Promise(r => setTimeout(r, 5000));
+         attempts++;
+         try {
+           const tx = await mpesaApi.checkStatus(CheckoutRequestID);
+           status = tx.status;
+         } catch (e) {
+           // ignore specific fetch errors on poll
+         }
+      }
+      
+      if (status === "completed") {
+         alert("Payment successful!");
+         // Ideally refetch data:
+         // fetchData();
+      } else if (status === "failed") {
+         alert("Payment failed or cancelled by user.");
+      } else {
+         alert("Payment is taking longer than expected. It will update shortly.");
+      }
+      
+    } catch (err: any) {
+      console.log(err);
+      alert("Failed to send STK push. Please check the network.");
     } finally {
       setCollectingId(null);
     }
@@ -294,7 +329,7 @@ export default function ContributionDayScreen({ navigation }: any) {
                       disabled={collectingId === member.id}
                     >
                       {collectingId === member.id ? (
-                        <ActivityIndicator color="#FFF" size="small" />
+                        <ActivityIndicator color={Colors.textPrimary} size="small" />
                       ) : (
                         <Text style={styles.collectSmallBtnText}>
                           Collect Ksh {(member.amount || 5000).toLocaleString()}
@@ -509,7 +544,7 @@ const styles = StyleSheet.create({
 
   memberInfo: { flex: 1 },
   memberName: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,

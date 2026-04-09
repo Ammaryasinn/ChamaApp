@@ -5,7 +5,7 @@ const express_1 = require("express");
 exports.healthRouter = (0, express_1.Router)();
 exports.healthRouter.get("/", (_req, res) => {
     res.status(200).json({
-        service: "pamoja-api",
+        service: "hazina-api",
         status: "ok",
         timestamp: new Date().toISOString(),
     });

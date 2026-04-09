@@ -28,13 +28,32 @@ export default function ChamaDetailsScreen({ navigation, route }: any) {
   const handleNext = () => {
     if (name.trim().length < 3) return;
 
-    if (chamaType === "HYBRID") {
-      navigation.navigate("HybridConfig", { name, aim });
-    } else {
-      // For now, other types go straight to dashboard. In reality they'd also have config screens
-      navigation.navigate("MainTabs");
+    switch (chamaType) {
+      case "MERRY_GO_ROUND":
+      case "merry_go_round":
+        navigation.navigate("MGRSetup", { name, aim });
+        break;
+      case "INVESTMENT":
+      case "investment":
+        navigation.navigate("InvestmentSetup", { name, aim });
+        break;
+      case "WELFARE":
+      case "welfare":
+        navigation.navigate("WelfareSetup", { name, aim });
+        break;
+      case "HYBRID":
+      case "hybrid":
+        navigation.navigate("HybridConfig", { name, aim });
+        break;
+      case "GROUP_PURCHASE":
+      case "group_purchase":
+        navigation.navigate("GroupPurchaseSetup", { name, aim });
+        break;
+      default:
+        navigation.navigate("MGRSetup", { name, aim });
     }
   };
+
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -107,7 +126,7 @@ const styles = StyleSheet.create({
   },
   content: { paddingHorizontal: Spacing[5], paddingBottom: Spacing[10] },
   title: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize["6xl"],
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -128,7 +147,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: { gap: Spacing[2] },
   label: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -142,7 +161,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontFamily: FontFamily.semiBold,
     fontWeight: FontWeight.semiBold,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
   textArea: { height: 100, textAlignVertical: "top" },
   footer: { padding: Spacing[5], backgroundColor: Colors.background },

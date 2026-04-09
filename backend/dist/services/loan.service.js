@@ -10,6 +10,22 @@ class LoanService {
     /**
      * Apply for a loan
      */
+    static async getLoans(chamaId) {
+        return await prisma_1.prisma.loan.findMany({
+            where: { chamaId },
+            include: {
+                borrowerMember: {
+                    include: { user: { select: { fullName: true, profilePhotoUrl: true } } },
+                },
+                votes: {
+                    include: {
+                        voterMember: { include: { user: { select: { fullName: true } } } },
+                    },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+    }
     static async applyForLoan(chamaId, borrowerMemberId, amount, repaymentMonths, purpose) {
         const chama = await prisma_1.prisma.chama.findUnique({ where: { id: chamaId } });
         if (!chama)

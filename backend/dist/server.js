@@ -22,5 +22,5 @@ exports.io.on("connection", (socket) => {
 });
 (0, cron_1.initCronJobs)();
 httpServer.listen(env_1.env.PORT, () => {
-    console.log(`Pamoja API listening on http://localhost:${env_1.env.PORT}`);
+    console.log(`Hazina API listening on http://localhost:${env_1.env.PORT}`);
 });

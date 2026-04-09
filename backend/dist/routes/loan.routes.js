@@ -5,6 +5,19 @@ const express_1 = require("express");
 const loan_service_1 = require("../services/loan.service");
 const auth_1 = require("../middleware/auth");
 exports.loanRouter = (0, express_1.Router)({ mergeParams: true });
+/**
+ * Get Loans
+ * GET /api/chamas/:id/loans
+ */
+exports.loanRouter.get("/", async (req, res) => {
+    try {
+        const loans = await loan_service_1.LoanService.getLoans(req.params.id);
+        res.status(200).json(loans);
+    }
+    catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
 exports.loanRouter.use(auth_1.authMiddleware);
 /**
  * Apply for Loan

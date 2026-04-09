@@ -473,7 +473,7 @@ export default function InvestmentDashboardScreen({ navigation, route }: any) {
               <View
                 style={[
                   styles.allocSegment,
-                  { flex: 2, backgroundColor: Colors.accent },
+                  { flex: 2, backgroundColor: Colors.background },
                 ]}
               />
             </View>
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     gap: Spacing[2],
   },
   sectionTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   },
   holdingLeft: {},
   holdingTicker: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.md,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   },
   holdingRight: { alignItems: "flex-end" },
   holdingValue: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.md,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
   },
   stockMeta: {},
   stockName: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.sm,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
   },
   stockRight: { alignItems: "flex-end" },
   stockPrice: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.sm,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   allocTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,

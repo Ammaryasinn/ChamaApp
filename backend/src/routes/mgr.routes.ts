@@ -3,6 +3,19 @@ import { MgrService } from '../services/mgr.service';
 import { authMiddleware } from '../middleware/auth';
 
 export const mgrRouter = Router({ mergeParams: true });
+/**
+ * Get MGR Schedule
+ * GET /api/chamas/:id/mgr/schedule
+ */
+mgrRouter.get("/schedule", async (req: Request, res: Response) => {
+  try {
+    const schedule = await MgrService.getSchedule(req.params.id as string);
+    res.status(200).json(schedule);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 
 mgrRouter.use(authMiddleware);
 

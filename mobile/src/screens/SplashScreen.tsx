@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Animated } from "react-native";
+import { View, Text, StyleSheet, Animated, Image } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors, FontFamily } from "../theme";
@@ -18,7 +18,7 @@ export default function SplashScreen({ navigation }: any) {
     // After 1.5 seconds, check for token and navigate
     const timer = setTimeout(async () => {
       try {
-        const token = await AsyncStorage.getItem("authToken");
+        const token = await AsyncStorage.getItem("hazina.accessToken");
         if (token) {
           // Returning user — go straight to the app
           navigation.replace("MainTabs");
@@ -43,11 +43,7 @@ export default function SplashScreen({ navigation }: any) {
       <View style={S.circleBL} />
 
       <Animated.View style={[S.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-        <Text style={S.logo}>
-          <Text style={{ color: "#FFFFFF" }}>Hazi</Text>
-          <Text style={{ color: "#F59E0B" }}>na</Text>
-        </Text>
-        <Text style={S.tagline}>Save together. Grow together.</Text>
+        <Image source={require("../../assets/images/logo.png")} style={{ width: 260, height: 260, resizeMode: "contain" }} />
       </Animated.View>
 
       <Text style={S.version}>v1.0</Text>
@@ -57,7 +53,7 @@ export default function SplashScreen({ navigation }: any) {
 
 const S = StyleSheet.create({
   screen: {
-    flex: 1, backgroundColor: Colors.primary,
+    flex: 1, backgroundColor: Colors.background,
     alignItems: "center", justifyContent: "center",
   },
   circleTR: {

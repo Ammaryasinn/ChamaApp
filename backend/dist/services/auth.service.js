@@ -17,7 +17,13 @@ const sms_service_1 = require("./sms.service");
  * For testing, OTP is returned in the response (never do this in production).
  */
 async function requestOtp(phoneNumber) {
-    const normalized = (0, phone_1.normalizePhoneNumber)(phoneNumber);
+    let normalized;
+    try {
+        normalized = (0, phone_1.normalizePhoneNumber)(phoneNumber);
+    }
+    catch {
+        throw error_1.Errors.INVALID_PHONE();
+    }
     const otpCode = (0, otp_1.generateOtpCode)();
     const expiresAt = (0, otp_1.getOtpExpiry)();
     await prisma_1.prisma.otpCode.create({
@@ -28,15 +34,23 @@ async function requestOtp(phoneNumber) {
             used: false,
         },
     });
-    // Send via Africa's Talking API
-    const message = `Your Pamoja App verification code is ${otpCode}. It will expire in 5 minutes.`;
-    await sms_service_1.SmsService.sendSms(normalized, message);
-    // In development, return the code for testing; in production, we still log for debug but don't return.
-    if (process.env.NODE_ENV !== 'production') {
+    // Always log in dev BEFORE sending SMS so it's visible even if AT fails
+    if (process.env.NODE_ENV !== "production") {
+        console.log(`\n========================================`);
         console.log(`[DEV] OTP for ${normalized}: ${otpCode}`);
+        console.log(`========================================\n`);
+    }
+    // Send via Africa's Talking (best-effort — don't fail the request if SMS fails)
+    try {
+        const message = `Your Hazina verification code is ${otpCode}. It will expire in 5 minutes.`;
+        await sms_service_1.SmsService.sendSms(normalized, message);
+    }
+    catch (smsErr) {
+        console.warn(`[SMS] Failed to send OTP SMS: ${smsErr?.message ?? smsErr}`);
+    }
+    if (process.env.NODE_ENV !== "production") {
         return { code: otpCode };
     }
-    // Hide the code in production
     return { code: "sent" };
 }
 /**
@@ -44,7 +58,13 @@ async function requestOtp(phoneNumber) {
  * Creates user if they don't exist.
  */
 async function verifyOtp(phoneNumber, code) {
-    const normalized = (0, phone_1.normalizePhoneNumber)(phoneNumber);
+    let normalized;
+    try {
+        normalized = (0, phone_1.normalizePhoneNumber)(phoneNumber);
+    }
+    catch {
+        throw error_1.Errors.INVALID_PHONE();
+    }
     // Find valid OTP
     const otpRecord = await prisma_1.prisma.otpCode.findFirst({
         where: {

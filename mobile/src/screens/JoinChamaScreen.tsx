@@ -78,7 +78,7 @@ export default function JoinChamaScreen({ navigation }: any) {
           }}
         >
           <Text style={S.btnText}>Verify and Join</Text>
-          <Feather name="arrow-right" size={18} color="#FFFFFF" />
+          <Feather name="arrow-right" size={18} color={Colors.textPrimary} />
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -107,19 +107,19 @@ const S = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center", justifyContent: "center",
   },
-  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 26, color: "#FFFFFF", fontWeight: "800", letterSpacing: -0.5 },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 26, color: "#E8D6B5", fontWeight: "800", letterSpacing: -0.5 },
 
   // Content
   content: {
-    flex: 1, backgroundColor: "#FFFFFF",
+    flex: 1, backgroundColor: Colors.surface,
     padding: 20, justifyContent: "space-between",
   },
   form: { marginTop: 10 },
   label: { fontFamily: FontFamily.semiBold, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1, marginBottom: 8 },
   input: {
     height: 54, borderRadius: 12, borderWidth: 1.5, borderColor: "#EBF1EF",
-    backgroundColor: "#F9FAFB", paddingHorizontal: 16,
-    fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.textPrimary, letterSpacing: 1,
+    backgroundColor: Colors.background, paddingHorizontal: 16,
+    fontFamily: FontFamily.extraBold, fontSize: 20, color: "#E8D6B5", letterSpacing: 1,
   },
   inputFocused: { borderColor: Colors.primary, backgroundColor: "#E8F7F4" },
   hint: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted, marginTop: 10 },
@@ -130,6 +130,6 @@ const S = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     marginBottom: 40,
   },
-  btnText: { fontFamily: FontFamily.heading, fontSize: 15, color: "#FFFFFF", fontWeight: "700" },
+  btnText: { fontFamily: FontFamily.heading, fontSize: 15, color: "#E8D6B5", fontWeight: "700" },
   btnDisabled: { opacity: 0.5 },
 });

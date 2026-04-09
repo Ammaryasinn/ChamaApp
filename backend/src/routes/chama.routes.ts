@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import * as chamaService from "../services/chama.service";
 import * as memberService from "../services/member.service";
+import { prisma } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
 import { ChamaType, ContributionFrequency } from "@prisma/client";
@@ -90,6 +91,31 @@ chamaRouter.put(
     );
 
     res.status(200).json(chama);
+  }),
+);
+
+// Broadcast message (protected, chairperson only)
+chamaRouter.post(
+  "/:id/broadcast",
+  authMiddleware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const schema = z.object({
+      message: z.string().min(1),
+    });
+
+    const { message } = schema.parse(req.body);
+    await prisma.notification.create({
+      data: {
+        chamaId: req.params.id as string,
+        title: "Announcement",
+        message,
+        type: "announcement",
+      },
+    });
+
+    // Logic to save announcement or push notification would go here.
+    // For now we just return success.
+    res.status(200).json({ success: true, message: "Message broadcasted successfully." });
   }),
 );
 

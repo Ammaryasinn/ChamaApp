@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.bold,
   },
   headerTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.lg,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize["3xl"],
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.semiBold,
   },
   calcValue: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.lg,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,

@@ -131,20 +131,20 @@ const S = StyleSheet.create({
   hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 40, paddingBottom: 20, overflow: "hidden" },
   heroNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 20, color: "#FFFFFF", fontWeight: "800" },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 20, color: "#E8D6B5", fontWeight: "800" },
   editBtn: { fontFamily: FontFamily.heading, fontSize: 14, color: "#F59E0B", fontWeight: "700" },
 
   scroll: { backgroundColor: "#F6F9F7", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
   sectionLabel: { fontFamily: FontFamily.heading, fontSize: 10, color: Colors.textMuted, fontWeight: "700", letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#EBF1EF", marginBottom: 20, overflow: "hidden" },
+  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: "#EBF1EF", marginBottom: 20, overflow: "hidden" },
 
   fieldRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
   fieldLabel: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textMuted, width: 90 },
-  fieldValue: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "600", flex: 1 },
-  fieldInput: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "600", flex: 1, borderBottomWidth: 1, borderBottomColor: Colors.primary, paddingBottom: 2 },
+  fieldValue: { fontFamily: FontFamily.heading, fontSize: 14, color: "#E8D6B5", fontWeight: "600", flex: 1 },
+  fieldInput: { fontFamily: FontFamily.heading, fontSize: 14, color: "#E8D6B5", fontWeight: "600", flex: 1, borderBottomWidth: 1, borderBottomColor: Colors.primary, paddingBottom: 2 },
 
   toggleRow: { flexDirection: "row", alignItems: "center", padding: 14 },
-  toggleLabel: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "600" },
+  toggleLabel: { fontFamily: FontFamily.heading, fontSize: 14, color: "#E8D6B5", fontWeight: "600" },
   toggleSub: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted, marginTop: 2 },
 
   dangerRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },

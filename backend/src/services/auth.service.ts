@@ -43,17 +43,24 @@ export async function requestOtp(
     },
   });
 
-  // Send via Africa's Talking API
-  const message = `Your Hazina verification code is ${otpCode}. It will expire in 5 minutes.`;
-  await SmsService.sendSms(normalized, message);
-
-  // In development, return the code for testing; in production, we still log for debug but don't return.
+  // Always log in dev BEFORE sending SMS so it's visible even if AT fails
   if (process.env.NODE_ENV !== "production") {
+    console.log(`\n========================================`);
     console.log(`[DEV] OTP for ${normalized}: ${otpCode}`);
-    return { code: otpCode };
+    console.log(`========================================\n`);
   }
 
-  // Hide the code in production
+  // Send via Africa's Talking (best-effort — don't fail the request if SMS fails)
+  try {
+    const message = `Your Hazina verification code is ${otpCode}. It will expire in 5 minutes.`;
+    await SmsService.sendSms(normalized, message);
+  } catch (smsErr: any) {
+    console.warn(`[SMS] Failed to send OTP SMS: ${smsErr?.message ?? smsErr}`);
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    return { code: otpCode };
+  }
   return { code: "sent" };
 }
 

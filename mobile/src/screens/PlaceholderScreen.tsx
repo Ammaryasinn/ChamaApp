@@ -71,7 +71,7 @@ const S = StyleSheet.create({
   backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
 
   body: {
-    flex: 1, backgroundColor: "#FFFFFF",
+    flex: 1, backgroundColor: Colors.surface,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     marginTop: -24, paddingHorizontal: 32,
     paddingTop: 48, alignItems: "center",
@@ -83,7 +83,7 @@ const S = StyleSheet.create({
   },
   title: {
     fontFamily: FontFamily.extraBold, fontSize: 24,
-    color: Colors.textPrimary, fontWeight: "800",
+    color: "#E8D6B5", fontWeight: "800",
     textAlign: "center", marginBottom: 12,
   },
   sub: {

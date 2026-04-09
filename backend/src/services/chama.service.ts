@@ -5,6 +5,7 @@ import { ChamaType, ContributionFrequency, ChamaStatus } from "@prisma/client";
 export interface CreateChamaInput {
   name: string;
   description?: string;
+  avatarUrl?: string;
   chamaType: ChamaType;
   contributionAmount: number;
   contributionFrequency: ContributionFrequency;
@@ -44,6 +45,7 @@ export async function createChama(
     data: {
       name: input.name,
       description: input.description,
+      avatarUrl: input.avatarUrl,
       chamaType: input.chamaType,
       contributionAmount: input.contributionAmount,
       contributionFrequency: input.contributionFrequency,
@@ -79,11 +81,17 @@ export async function getUserChamas(userId: string) {
   const memberships = await prisma.chamaMember.findMany({
     where: { userId },
     include: {
-      chama: true,
+      chama: {
+        include: { _count: { select: { members: true } } }
+      },
     },
   });
 
-  return memberships.map((m) => formatChamaResponse(m.chama));
+  return memberships.map((m) => ({
+    ...formatChamaResponse(m.chama),
+    userRole: m.role,
+    memberCount: m.chama._count.members,
+  }));
 }
 
 /**
@@ -142,6 +150,7 @@ export async function updateChama(
     data: {
       name: data.name,
       description: data.description,
+      avatarUrl: data.avatarUrl,
       contributionAmount: data.contributionAmount,
       contributionFrequency: data.contributionFrequency,
       meetingDay: data.meetingDay,
@@ -163,10 +172,14 @@ function formatChamaResponse(chama: any) {
     id: chama.id,
     name: chama.name,
     description: chama.description,
+    avatarUrl: chama.avatarUrl,
     chamaType: chama.chamaType,
     contributionAmount: chama.contributionAmount,
     contributionFrequency: chama.contributionFrequency,
     penaltyAmount: chama.penaltyAmount,
+    mgrPotBalance: chama.mgrPotBalance,
+    investmentFundBalance: chama.investmentFundBalance,
+    welfarePotBalance: chama.welfarePotBalance,
     status: chama.status,
     createdAt: chama.createdAt,
   };

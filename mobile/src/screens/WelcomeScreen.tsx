@@ -1,7 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
+import { View, Text, Image,
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
@@ -27,7 +25,7 @@ export default function WelcomeScreen({ navigation }: any) {
       {/* Hero */}
       <View style={S.hero}>
         <HeroCircles />
-        <Text style={S.heroTitle}>Welcome to Hazina</Text>
+        <Image source={require("../../assets/images/logo.png")} style={{ width: 220, height: 220, resizeMode: "contain", alignSelf: "center", marginBottom: 12 }} />
         <Text style={S.heroSub}>Let's get started. How would you like to use Hazina today?</Text>
       </View>
 
@@ -56,7 +54,7 @@ export default function WelcomeScreen({ navigation }: any) {
           activeOpacity={0.8}
           onPress={() => navigation.navigate("JoinChama")}
         >
-          <View style={[S.iconWrap, { backgroundColor: "#FEF3C7" }]}>
+          <View style={[S.iconWrap, { backgroundColor: Colors.surfaceElevated }]}>
             <Feather name="log-in" size={24} color="#D97706" />
           </View>
           <View style={S.cardBody}>
@@ -66,13 +64,6 @@ export default function WelcomeScreen({ navigation }: any) {
           <Feather name="chevron-right" size={20} color={Colors.textMuted} />
         </TouchableOpacity>
 
-        {/* Skip for now */}
-        <TouchableOpacity 
-          style={S.skipBtn} 
-          onPress={() => navigation.replace("MainTabs")}
-        >
-          <Text style={S.skipText}>Skip for now</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -95,7 +86,7 @@ const S = StyleSheet.create({
     position: "absolute", width: 140, height: 140, borderRadius: 70,
     backgroundColor: "rgba(245,158,11,0.10)", bottom: -40, left: -30,
   },
-  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 32, color: "#FFFFFF", fontWeight: "800", letterSpacing: -0.5 },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 32, color: "#E8D6B5", fontWeight: "800", letterSpacing: -0.5 },
   heroSub:   { fontFamily: FontFamily.regular, fontSize: 15, color: "rgba(255,255,255,0.8)", lineHeight: 22, paddingRight: 40 },
 
   // Content
@@ -106,7 +97,7 @@ const S = StyleSheet.create({
   
   card: {
     flexDirection: "row", alignItems: "center", gap: 16,
-    backgroundColor: "#FFFFFF", borderRadius: 16, borderWidth: 1, borderColor: "#EBF1EF",
+    backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: "#EBF1EF",
     padding: 20,
     shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1,
   },
@@ -115,7 +106,7 @@ const S = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   cardBody: { flex: 1 },
-  cardTitle: { fontFamily: FontFamily.extraBold, fontSize: 16, color: Colors.textPrimary, fontWeight: "800", marginBottom: 4 },
+  cardTitle: { fontFamily: FontFamily.extraBold, fontSize: 16, color: "#E8D6B5", fontWeight: "800", marginBottom: 4 },
   cardSub: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textMuted, lineHeight: 18 },
 
   skipBtn: { alignItems: "center", marginTop: 24, padding: 10 },

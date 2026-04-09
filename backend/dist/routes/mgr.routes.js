@@ -5,6 +5,19 @@ const express_1 = require("express");
 const mgr_service_1 = require("../services/mgr.service");
 const auth_1 = require("../middleware/auth");
 exports.mgrRouter = (0, express_1.Router)({ mergeParams: true });
+/**
+ * Get MGR Schedule
+ * GET /api/chamas/:id/mgr/schedule
+ */
+exports.mgrRouter.get("/schedule", async (req, res) => {
+    try {
+        const schedule = await mgr_service_1.MgrService.getSchedule(req.params.id);
+        res.status(200).json(schedule);
+    }
+    catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
 exports.mgrRouter.use(auth_1.authMiddleware);
 /**
  * Generate MGR Schedule

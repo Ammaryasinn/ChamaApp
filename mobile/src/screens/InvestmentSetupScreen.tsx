@@ -23,6 +23,8 @@ import {
   Spacing,
 } from "../theme";
 import { useChamaContext } from "../context/ChamaContext";
+import { chamaApi } from "../lib/api";
+import { Alert, ActivityIndicator } from "react-native";
 
 const FOCUS_OPTIONS = [
   {
@@ -30,8 +32,8 @@ const FOCUS_OPTIONS = [
     label: "NSE Stocks",
     icon: "trending-up" as const,
     desc: "Buy shares in Kenyan & global listed companies",
-    color: "#3B82F6",
-    bg: "#EFF6FF",
+    color: Colors.primary,
+    bg: Colors.surfaceElevated,
   },
   {
     id: "realestate",
@@ -46,8 +48,8 @@ const FOCUS_OPTIONS = [
     label: "Unit Trusts",
     icon: "pie-chart" as const,
     desc: "Managed funds — lower risk, steady growth",
-    color: "#7C3AED",
-    bg: "#F5F3FF",
+    color: Colors.accent,
+    bg: Colors.surfaceElevated,
   },
   {
     id: "mixed",
@@ -82,7 +84,11 @@ function FocusCard({
       <Animated.View
         style={[
           styles.focusCard,
-          selected && { borderColor: item.color, borderWidth: 2, backgroundColor: item.bg },
+          selected && {
+            borderColor: item.color,
+            borderWidth: 2,
+            backgroundColor: item.bg,
+          },
           { transform: [{ scale }] },
         ]}
       >
@@ -111,7 +117,45 @@ export default function InvestmentSetupScreen({ navigation }: any) {
   const [nameFocused, setNameFocused] = useState(false);
   const [amtFocused, setAmtFocused] = useState(false);
 
-  const canContinue = name.trim().length >= 3 && monthlyTarget.trim().length > 0;
+  const canContinue =
+    name.trim().length >= 3 && monthlyTarget.trim().length > 0;
+  const [loading, setLoading] = useState(false);
+
+  const handleContinue = async () => {
+    if (!canContinue) return;
+    setLoading(true);
+    try {
+      const newChama = await chamaApi.createChama({
+        name: name.trim(),
+        chamaType: "investment",
+        contributionAmount: parseInt(monthlyTarget) || 0,
+        contributionFrequency: "monthly",
+        penaltyAmount: 0,
+        penaltyGraceDays: 3,
+        meetingDay: 6,
+        maxLoanMultiplier: 3,
+        loanInterestRate: 10,
+        minVotesToApproveLoan: 3,
+        mgrPercentage: 0,
+        investmentPercentage: 100,
+        welfarePercentage: 0,
+      });
+      navigation.navigate("InviteMembers", {
+        chamaType: "investment",
+        name: name.trim(),
+        monthlyTarget,
+        focus,
+        chamaId: newChama.id,
+      });
+    } catch (e: any) {
+      Alert.alert(
+        "Error",
+        e?.response?.data?.error || "Failed to create Chama.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -119,7 +163,7 @@ export default function InvestmentSetupScreen({ navigation }: any) {
 
       {/* Dark gradient hero */}
       <LinearGradient
-        colors={["#071510", "#0A1F18", "#0D2E22"]}
+        colors={["#02120D", "#052118", "#083326"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.hero}
@@ -135,8 +179,8 @@ export default function InvestmentSetupScreen({ navigation }: any) {
           <Text style={styles.heroOverline}>INVESTMENT CHAMA</Text>
           <Text style={styles.heroTitle}>Build wealth{"\n"}together</Text>
           <Text style={styles.heroSubtitle}>
-            Your group pools monthly contributions to invest in stocks, property,
-            and funds — growing wealth no single member could alone.
+            Your group pools monthly contributions to invest in stocks,
+            property, and funds — growing wealth no single member could alone.
           </Text>
         </View>
       </LinearGradient>
@@ -163,12 +207,7 @@ export default function InvestmentSetupScreen({ navigation }: any) {
 
         {/* Monthly target */}
         <Text style={styles.sectionLabel}>MONTHLY TARGET PER MEMBER</Text>
-        <View
-          style={[
-            styles.amountInput,
-            amtFocused && styles.inputFocused,
-          ]}
-        >
+        <View style={[styles.amountInput, amtFocused && styles.inputFocused]}>
           <Text style={styles.currencyPrefix}>KES</Text>
           <TextInput
             style={styles.amountTextInput}
@@ -199,7 +238,9 @@ export default function InvestmentSetupScreen({ navigation }: any) {
         <View style={styles.explainerCard}>
           <View style={styles.explainerHeader}>
             <Feather name="info" size={15} color={Colors.primary} />
-            <Text style={styles.explainerTitle}>How investment chamas work</Text>
+            <Text style={styles.explainerTitle}>
+              How investment chamas work
+            </Text>
           </View>
           {[
             {
@@ -239,23 +280,25 @@ export default function InvestmentSetupScreen({ navigation }: any) {
       {/* Footer */}
       <View style={styles.footer}>
         <Pressable
-          style={[styles.continueBtn, !canContinue && styles.continueBtnDisabled]}
-          onPress={() => {
-            navigation.navigate("InviteMembers", {
-              chamaType: "investment",
-              name: name.trim(),
-              monthlyTarget,
-              focus,
-            });
-          }}
-          disabled={!canContinue}
+          style={[
+            styles.continueBtn,
+            (!canContinue || loading) && styles.continueBtnDisabled,
+          ]}
+          onPress={handleContinue}
+          disabled={!canContinue || loading}
         >
-          <Text style={styles.continueBtnText}>Continue</Text>
-          <Feather
-            name="arrow-right"
-            size={18}
-            color={canContinue ? Colors.textInverse : Colors.textMuted}
-          />
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.continueBtnText}>Continue</Text>
+              <Feather
+                name="arrow-right"
+                size={18}
+                color={canContinue ? Colors.textInverse : Colors.textMuted}
+              />
+            </>
+          )}
         </Pressable>
       </View>
     </SafeAreaView>
@@ -358,7 +401,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontFamily: FontFamily.semiBold,
     fontWeight: FontWeight.semiBold,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
   inputFocused: {
     borderColor: Colors.primary,
@@ -391,7 +434,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontFamily: FontFamily.semiBold,
     fontWeight: FontWeight.semiBold,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
 
   // Focus cards
@@ -420,7 +463,7 @@ const styles = StyleSheet.create({
   },
   focusTextBlock: { flex: 1 },
   focusLabel: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.md,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,

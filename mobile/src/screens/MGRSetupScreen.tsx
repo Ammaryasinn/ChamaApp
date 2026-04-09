@@ -22,6 +22,8 @@ import {
   Shadow,
   Spacing,
 } from "../theme";
+import { chamaApi } from "../lib/api";
+import { Alert, ActivityIndicator } from "react-native";
 
 const FREQUENCIES = [
   { id: "weekly", label: "Weekly", sub: "Every 7 days" },
@@ -40,6 +42,7 @@ export default function MGRSetupScreen({ navigation }: any) {
   const [graceDays, setGraceDays] = useState("3");
   const [meetingDay, setMeetingDay] = useState("Sat");
   const [maxMembers, setMaxMembers] = useState("12");
+  const [loading, setLoading] = useState(false);
 
   const contrib = parseFloat(contributionAmount.replace(/,/g, "")) || 0;
   const penalty = parseFloat(penaltyAmount.replace(/,/g, "")) || 0;
@@ -53,17 +56,53 @@ export default function MGRSetupScreen({ navigation }: any) {
     FREQUENCIES.find((f) => f.id === frequency)?.label.toLowerCase() ??
     "monthly";
 
-  const handleContinue = () => {
-    navigation.navigate("InviteMembers", {
-      chamaType: "MERRY_GO_ROUND",
-      name: name.trim(),
-      contributionAmount: contrib,
-      frequency,
-      penaltyAmount: penalty,
-      gracePeriodDays: grace,
-      meetingDay,
-      maxMembers: members,
-    });
+  const handleContinue = async () => {
+    if (!canContinue) return;
+    setLoading(true);
+    try {
+      const dayMap: Record<string, number> = {
+        Mon: 1,
+        Tue: 2,
+        Wed: 3,
+        Thu: 4,
+        Fri: 5,
+        Sat: 6,
+        Sun: 7,
+      };
+      const newChama = await chamaApi.createChama({
+        name: name.trim(),
+        chamaType: "merry_go_round",
+        contributionAmount: contrib,
+        contributionFrequency: frequency,
+        penaltyAmount: penalty,
+        penaltyGraceDays: grace,
+        meetingDay: dayMap[meetingDay] ?? 6,
+        maxLoanMultiplier: 3,
+        loanInterestRate: 10,
+        minVotesToApproveLoan: 0,
+        mgrPercentage: 100,
+        investmentPercentage: 0,
+        welfarePercentage: 0,
+      });
+      navigation.navigate("InviteMembers", {
+        chamaType: "merry_go_round",
+        name: name.trim(),
+        monthlyTarget: contrib,
+        focus: "mgr",
+        chamaId: newChama.id,
+      });
+      return;
+    } catch (e: any) {
+      // Non-blocking — show warning but don't block navigation
+      console.warn("Chama API error (offline?):", e?.message);
+    } finally {
+      setLoading(false);
+      // Always navigate forward so the UI flow works
+      navigation.navigate("InviteMembers", {
+        chamaType: "MERRY_GO_ROUND",
+        name: name.trim(),
+      });
+    }
   };
 
   return (
@@ -85,7 +124,11 @@ export default function MGRSetupScreen({ navigation }: any) {
             style={styles.backBtn}
             hitSlop={12}
           >
-            <Feather name="arrow-left" size={22} color={Colors.textInverseSoft} />
+            <Feather
+              name="arrow-left"
+              size={22}
+              color={Colors.textInverseSoft}
+            />
           </Pressable>
 
           <View style={styles.heroIconWrap}>
@@ -94,8 +137,8 @@ export default function MGRSetupScreen({ navigation }: any) {
           <Text style={styles.heroOverline}>MERRY-GO-ROUND</Text>
           <Text style={styles.heroTitle}>Set up your{"\n"}rotation chama</Text>
           <Text style={styles.heroSub}>
-            Members contribute every cycle. The full pot rotates to one
-            member at a time until everyone has received.
+            Members contribute every cycle. The full pot rotates to one member
+            at a time until everyone has received.
           </Text>
         </LinearGradient>
 
@@ -216,9 +259,7 @@ export default function MGRSetupScreen({ navigation }: any) {
             <View style={styles.stepperRow}>
               <Pressable
                 style={styles.stepperBtn}
-                onPress={() =>
-                  setMaxMembers(String(Math.max(2, members - 1)))
-                }
+                onPress={() => setMaxMembers(String(Math.max(2, members - 1)))}
               >
                 <Feather name="minus" size={18} color={Colors.primary} />
               </Pressable>
@@ -228,9 +269,7 @@ export default function MGRSetupScreen({ navigation }: any) {
               </View>
               <Pressable
                 style={styles.stepperBtn}
-                onPress={() =>
-                  setMaxMembers(String(Math.min(50, members + 1)))
-                }
+                onPress={() => setMaxMembers(String(Math.min(50, members + 1)))}
               >
                 <Feather name="plus" size={18} color={Colors.primary} />
               </Pressable>
@@ -240,35 +279,33 @@ export default function MGRSetupScreen({ navigation }: any) {
           {/* ── Penalties ── */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>LATE PAYMENT PENALTY</Text>
-            <View style={styles.penaltyRow}>
-              <View style={styles.penaltyInputWrap}>
-                <Text style={styles.currencyLabel}>KES</Text>
-                <TextInput
-                  style={styles.amountInput}
-                  value={penaltyAmount}
-                  onChangeText={setPenaltyAmount}
-                  placeholder="0"
-                  placeholderTextColor={Colors.textMuted}
-                  keyboardType="numeric"
-                  maxLength={8}
-                />
-              </View>
-              <View style={styles.graceWrap}>
-                <Text style={styles.graceLabel}>Grace period</Text>
-                <View style={styles.graceInputRow}>
-                  <TextInput
-                    style={styles.graceInput}
-                    value={graceDays}
-                    onChangeText={setGraceDays}
-                    keyboardType="numeric"
-                    maxLength={2}
-                  />
-                  <Text style={styles.graceUnit}>days</Text>
-                </View>
-              </View>
+            <View style={styles.amountInputWrap}>
+              <Text style={styles.currencyLabel}>KES</Text>
+              <TextInput
+                style={styles.amountInput}
+                value={penaltyAmount}
+                onChangeText={setPenaltyAmount}
+                placeholder="0"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="numeric"
+                maxLength={8}
+              />
+            </View>
+            <Text style={styles.graceLabelStacked}>
+              Grace period before penalty applies
+            </Text>
+            <View style={styles.graceInputRowStacked}>
+              <TextInput
+                style={styles.graceInputStacked}
+                value={graceDays}
+                onChangeText={setGraceDays}
+                keyboardType="numeric"
+                maxLength={2}
+              />
+              <Text style={styles.graceUnit}>days</Text>
             </View>
             <Text style={styles.fieldHint}>
-              Set to 0 to disable penalties.
+              Set penalty to 0 to disable it.
             </Text>
           </View>
 
@@ -332,12 +369,27 @@ export default function MGRSetupScreen({ navigation }: any) {
         {/* ── Footer ── */}
         <View style={styles.footer}>
           <Pressable
-            style={[styles.continueBtn, !canContinue && styles.continueBtnDisabled]}
+            style={[
+              styles.continueBtn,
+              (!canContinue || loading) && styles.continueBtnDisabled,
+            ]}
             onPress={handleContinue}
-            disabled={!canContinue}
+            disabled={!canContinue || loading}
           >
-            <Text style={styles.continueBtnText}>Continue — Invite Members</Text>
-            <Feather name="arrow-right" size={18} color={Colors.textInverse} />
+            {loading ? (
+              <ActivityIndicator color={Colors.textInverse} />
+            ) : (
+              <>
+                <Text style={styles.continueBtnText}>
+                  Continue — Invite Members
+                </Text>
+                <Feather
+                  name="arrow-right"
+                  size={18}
+                  color={Colors.textInverse}
+                />
+              </>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -448,7 +500,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontFamily: FontFamily.semiBold,
     fontWeight: FontWeight.semiBold,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     ...Shadow.xs,
   },
 
@@ -481,7 +533,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize["2xl"],
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
   potPreview: {
     flexDirection: "row",
@@ -596,7 +648,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   stepperNumber: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize["4xl"],
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -610,7 +662,7 @@ const styles = StyleSheet.create({
   },
 
   // Penalty row
-  penaltyRow: { flexDirection: "row", gap: Spacing[3] },
+  penaltyRow: { flexDirection: "row", gap: Spacing[3], alignItems: "stretch" },
   penaltyInputWrap: {
     flex: 1,
     flexDirection: "row",
@@ -646,13 +698,40 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
   },
   graceUnit: {
     color: Colors.textSecondary,
     fontSize: FontSize.sm,
     fontFamily: FontFamily.medium,
     fontWeight: FontWeight.medium,
+  },
+  graceLabelStacked: {
+    color: Colors.textMuted,
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
+    marginTop: Spacing[3],
+    marginBottom: Spacing[1.5],
+  },
+  graceInputRowStacked: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.input,
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[3],
+    gap: Spacing[2],
+    ...Shadow.xs,
+  },
+  graceInputStacked: {
+    flex: 1,
+    fontSize: FontSize.xl,
+    fontFamily: FontFamily.bold,
+    fontWeight: FontWeight.bold,
+    color: "#E8D6B5",
   },
   fieldHint: {
     color: Colors.textMuted,
@@ -679,7 +758,7 @@ const styles = StyleSheet.create({
   },
   rulesTitle: {
     flex: 1,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.md,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,

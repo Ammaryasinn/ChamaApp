@@ -1,27 +1,54 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
   TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { uploadApi, authApi } from "../lib/api";
 import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
 import { useChamaContext } from "../context/ChamaContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function HeroCircles({ color }: { color?: string }) {
   return (
     <>
-      <View style={[S.cTR, color ? { backgroundColor: "rgba(255,255,255,0.1)" } : null]} />
-      <View style={[S.cBL, color ? { backgroundColor: "rgba(0,0,0,0.1)" } : null]} />
+      <View
+        style={[
+          S.cTR,
+          color ? { backgroundColor: "rgba(255,255,255,0.1)" } : null,
+        ]}
+      />
+      <View
+        style={[S.cBL, color ? { backgroundColor: "rgba(0,0,0,0.1)" } : null]}
+      />
     </>
   );
 }
 
-interface MenuItem { icon: React.ComponentProps<typeof Feather>["name"]; label: string; sub: string; badge?: string; onPress: () => void; }
+interface MenuItem {
+  icon: React.ComponentProps<typeof Feather>["name"];
+  label: string;
+  sub: string;
+  badge?: string;
+  onPress: () => void;
+}
 
 function MenuRow({ item }: { item: MenuItem }) {
   return (
-    <TouchableOpacity style={S.menuRow} onPress={item.onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={S.menuRow}
+      onPress={item.onPress}
+      activeOpacity={0.7}
+    >
       <View style={S.menuIcon}>
         <Feather name={item.icon} size={20} color={Colors.primary} />
       </View>
@@ -30,7 +57,9 @@ function MenuRow({ item }: { item: MenuItem }) {
         <Text style={S.menuSub}>{item.sub}</Text>
       </View>
       {item.badge ? (
-        <View style={S.proBadge}><Text style={S.proBadgeText}>{item.badge}</Text></View>
+        <View style={S.proBadge}>
+          <Text style={S.proBadgeText}>{item.badge}</Text>
+        </View>
       ) : (
         <Feather name="chevron-right" size={16} color={Colors.textMuted} />
       )}
@@ -45,31 +74,114 @@ function SectionHeader({ title }: { title: string }) {
 export default function ProfileScreen({ navigation }: any) {
   const { activeChamaColor } = useChamaContext();
   const heroBg = activeChamaColor || Colors.primary;
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets[0].uri) {
+        setIsUploading(true);
+        const { url } = await uploadApi.uploadImage(
+          result.assets[0].uri,
+          "hazina_avatars",
+        );
+        await authApi.updateProfile({ profilePhotoUrl: url });
+        setAvatarUri(url);
+        Alert.alert("Success", "Profile photo uploaded securely!");
+      }
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Error", e?.message || "Failed to upload photo");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert("Log out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.removeItem("hazina.accessToken");
+          navigation
+            .getParent()
+            ?.reset({ index: 0, routes: [{ name: "Auth" }] }) ||
+            navigation.reset({ index: 0, routes: [{ name: "Auth" }] });
+        },
+      },
+    ]);
+  };
 
   const MENU: { section: string; items: MenuItem[] }[] = [
     {
       section: "MY CHAMAS",
       items: [
-        { icon: "users",      label: "Invite members",    sub: "Add people to your chama",        onPress: () => navigation.navigate("InviteMembers") },
-        { icon: "file-text",  label: "Meeting minutes",   sub: "Record and view decisions",        onPress: () => navigation.navigate("Placeholder") },
+        {
+          icon: "users",
+          label: "Invite members",
+          sub: "Add people to your chama",
+          onPress: () => navigation.navigate("InviteMembers"),
+        },
+        {
+          icon: "calendar",
+          label: "Contribution schedule",
+          sub: "View & manage due dates",
+          onPress: () => navigation.navigate("ContributionDay"),
+        },
       ],
     },
     {
       section: "REPORTS",
       items: [
-        { icon: "bar-chart-2", label: "Annual report", sub: "Download PDF · 2025", badge: "PRO", onPress: () => navigation.navigate("PremiumSubscription") },
+        {
+          icon: "bar-chart-2",
+          label: "Annual report",
+          sub: "Download PDF · 2025",
+          badge: "PRO",
+          onPress: () => navigation.navigate("PremiumSubscription"),
+        },
       ],
     },
     {
       section: "MARKETPLACE",
       items: [
-        { icon: "shopping-bag", label: "Group purchases", sub: "Samsung, Ramtons deals", onPress: () => navigation.navigate("ChamaType") },
+        {
+          icon: "shopping-bag",
+          label: "Marketplace",
+          sub: "Deals, Samsung, Ramtons",
+          onPress: () => navigation.navigate("Marketplace"),
+        },
       ],
     },
     {
       section: "ACCOUNT",
       items: [
-        { icon: "settings", label: "Settings", sub: "Profile, notifications", onPress: () => navigation.navigate("Settings") },
+        {
+          icon: "settings",
+          label: "Settings",
+          sub: "Profile, notifications",
+          onPress: () => navigation.navigate("Settings"),
+        },
+      ],
+    },
+    {
+      section: "SESSION",
+      items: [
+        {
+          icon: "log-out",
+          label: "Log out",
+          sub: "Sign out of your account",
+          onPress: handleLogout,
+        },
       ],
     },
   ];
@@ -83,9 +195,22 @@ export default function ProfileScreen({ navigation }: any) {
         <HeroCircles color={activeChamaColor} />
         <Text style={S.loggedAs}>Logged in as</Text>
         <View style={S.profileRow}>
-          <View style={S.avatar}>
-            <Text style={S.avatarText}>WK</Text>
-          </View>
+          <TouchableOpacity
+            style={S.avatar}
+            onPress={handlePickImage}
+            activeOpacity={0.8}
+          >
+            {isUploading ? (
+              <ActivityIndicator color={Colors.textPrimary} />
+            ) : avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={S.avatarImg} />
+            ) : (
+              <Text style={S.avatarText}>WK</Text>
+            )}
+            <View style={S.editBadge}>
+              <Feather name="camera" size={10} color={Colors.textPrimary} />
+            </View>
+          </TouchableOpacity>
           <View>
             <Text style={S.profileName}>Wanjiru Kamau</Text>
             <Text style={S.profileSub}>Chairperson · 2 chamas</Text>
@@ -94,10 +219,14 @@ export default function ProfileScreen({ navigation }: any) {
 
         {/* Score + upgrade row */}
         <View style={S.scoreCard}>
-          <View style={S.scoreLeft}>
-            <Text style={S.scoreLabel}>Hazina Score</Text>
+          <TouchableOpacity
+            style={S.scoreLeft}
+            onPress={() => navigation.navigate("HazinaScore")}
+            activeOpacity={0.8}
+          >
+            <Text style={S.scoreLabel}>Hazina Score ›</Text>
             <Text style={S.scoreNum}>742</Text>
-          </View>
+          </TouchableOpacity>
           <View style={S.scoreRight}>
             <Text style={S.freeTier}>Free tier</Text>
             <TouchableOpacity
@@ -112,7 +241,10 @@ export default function ProfileScreen({ navigation }: any) {
       </View>
 
       {/* Menu */}
-      <ScrollView contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={S.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         {MENU.map((section) => (
           <View key={section.section}>
             <SectionHeader title={section.section} />
@@ -133,35 +265,175 @@ export default function ProfileScreen({ navigation }: any) {
 
 const S = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.primary },
-  cTR: { position: "absolute", width: 180, height: 180, borderRadius: 90, backgroundColor: "rgba(255,255,255,0.05)", top: -50, right: -50 },
-  cBL: { position: "absolute", width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(245,158,11,0.10)", bottom: -40, left: -30 },
+  cTR: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    top: -50,
+    right: -50,
+  },
+  cBL: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(245,158,11,0.10)",
+    bottom: -40,
+    left: -30,
+  },
 
-  hero: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingTop: 44, paddingBottom: 20, overflow: "hidden", gap: 8 },
-  loggedAs: { fontFamily: FontFamily.regular, fontSize: 11, color: "rgba(255,255,255,0.55)" },
+  hero: {
+    backgroundColor: Colors.background,
+    paddingHorizontal: 20,
+    paddingTop: 44,
+    paddingBottom: 20,
+    overflow: "hidden",
+    gap: 8,
+  },
+  loggedAs: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: "rgba(255,255,255,0.55)",
+  },
   profileRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#2E9E87", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.3)" },
-  avatarText: { fontFamily: FontFamily.heading, fontSize: 16, color: "#FFFFFF", fontWeight: "700" },
-  profileName: { fontFamily: FontFamily.extraBold, fontSize: 18, color: "#FFFFFF", fontWeight: "800" },
-  profileSub:  { fontFamily: FontFamily.regular, fontSize: 12, color: "rgba(255,255,255,0.65)" },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  avatarImg: { width: 44, height: 44, borderRadius: 22 },
+  editBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -4,
+    backgroundColor: Colors.background,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFF",
+  },
+  avatarText: {
+    fontFamily: FontFamily.heading,
+    fontSize: 16,
+    color: "#E8D6B5",
+    fontWeight: "700",
+  },
+  profileName: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 18,
+    color: "#E8D6B5",
+    fontWeight: "800",
+  },
+  profileSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.65)",
+  },
 
-  scoreCard: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 12, padding: 12, marginTop: 4 },
+  scoreCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+  },
   scoreLeft: { flex: 1 },
   scoreRight: { alignItems: "flex-end", gap: 6 },
-  scoreLabel: { fontFamily: FontFamily.medium, fontSize: 11, color: "rgba(255,255,255,0.6)" },
-  scoreNum:   { fontFamily: FontFamily.extraBold, fontSize: 28, color: "#F59E0B", fontWeight: "800" },
-  freeTier:   { fontFamily: FontFamily.regular, fontSize: 11, color: "rgba(255,255,255,0.55)" },
-  upgradeBtn: { backgroundColor: "#F59E0B", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
-  upgradeBtnText: { fontFamily: FontFamily.heading, fontSize: 12, color: "#FFFFFF", fontWeight: "700" },
+  scoreLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: "rgba(255,255,255,0.6)",
+  },
+  scoreNum: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 28,
+    color: "#F59E0B",
+    fontWeight: "800",
+  },
+  freeTier: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: "rgba(255,255,255,0.55)",
+  },
+  upgradeBtn: {
+    backgroundColor: "#F59E0B",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  upgradeBtnText: {
+    fontFamily: FontFamily.heading,
+    fontSize: 12,
+    color: "#E8D6B5",
+    fontWeight: "700",
+  },
 
-  scroll: { backgroundColor: "#F6F9F7", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
-  sectionHeader: { fontFamily: FontFamily.semiBold, fontSize: 10, color: Colors.textMuted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8, marginTop: 16 },
-  menuCard: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#EBF1EF", overflow: "hidden" },
+  scroll: {
+    backgroundColor: Colors.surfaceDark,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 100,
+  },
+  sectionHeader: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  menuCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#EBF1EF",
+    overflow: "hidden",
+  },
   menuRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  menuIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#E8F7F4", alignItems: "center", justifyContent: "center" },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: Colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   menuMeta: { flex: 1 },
-  menuLabel: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700" },
-  menuSub:   { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted, marginTop: 1 },
-  proBadge: { backgroundColor: "#F59E0B", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3 },
-  proBadgeText: { fontFamily: FontFamily.heading, fontSize: 10, color: "#FFFFFF", fontWeight: "700" },
-  sep: { height: 1, backgroundColor: "#F6F9F7", marginHorizontal: 14 },
+  menuLabel: {
+    fontFamily: FontFamily.heading,
+    fontSize: 14,
+    color: "#E8D6B5",
+    fontWeight: "700",
+  },
+  menuSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 1,
+  },
+  proBadge: {
+    backgroundColor: "#F59E0B",
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  proBadgeText: {
+    fontFamily: FontFamily.heading,
+    fontSize: 10,
+    color: "#E8D6B5",
+    fontWeight: "700",
+  },
+  sep: { height: 1, backgroundColor: Colors.surfaceDark, marginHorizontal: 14 },
 });

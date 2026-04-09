@@ -34,74 +34,7 @@ interface Criterion {
   format: (v: number) => string;
 }
 
-// Mock member data — in production this comes from the API / AsyncStorage
-const MEMBER_DATA = {
-  monthsAsMember: 14,
-  creditScore: 742,
-  onTimeRate: 92, // percentage
-  totalContributed: 84000, // KES
-  activeLoans: 0,
-  hasDefaultHistory: false,
-};
-
-// Thresholds
-const CRITERIA: Criterion[] = [
-  {
-    id: "tenure",
-    label: "Minimum membership",
-    description: "You must have been an active member for at least 6 months.",
-    icon: "calendar",
-    current: MEMBER_DATA.monthsAsMember,
-    required: 6,
-    unit: "months",
-    format: (v) => `${v} month${v !== 1 ? "s" : ""}`,
-  },
-  {
-    id: "score",
-    label: "Hazina Credit Score",
-    description:
-      "Your score is built from payment consistency, loan history, and tenure.",
-    icon: "bar-chart-2",
-    current: MEMBER_DATA.creditScore,
-    required: 600,
-    unit: "pts",
-    format: (v) => `${v} / 850`,
-  },
-  {
-    id: "ontime",
-    label: "On-time payment rate",
-    description:
-      "At least 75% of your contributions must have been paid on time.",
-    icon: "check-circle",
-    current: MEMBER_DATA.onTimeRate,
-    required: 75,
-    unit: "%",
-    format: (v) => `${v}%`,
-  },
-  {
-    id: "contributions",
-    label: "Total contributed",
-    description:
-      "You must have contributed at least KES 30,000 across all cycles.",
-    icon: "trending-up",
-    current: MEMBER_DATA.totalContributed,
-    required: 30000,
-    unit: "KES",
-    format: (v) => `KES ${v.toLocaleString()}`,
-  },
-  {
-    id: "loans",
-    label: "No active defaults",
-    description:
-      "You must have no outstanding loan defaults or active loan penalties.",
-    icon: "shield",
-    current: MEMBER_DATA.hasDefaultHistory ? 1 : 0,
-    required: 0, // 0 defaults required
-    unit: "defaults",
-    format: (v) =>
-      v === 0 ? "Clean record" : `${v} default${v !== 1 ? "s" : ""}`,
-  },
-];
+// Removed static mock MEMBER_DATA and CRITERIA.
 
 function passesCriterion(c: Criterion): boolean {
   if (c.id === "loans") return c.current === 0;
@@ -231,7 +164,7 @@ const criterionStyles = StyleSheet.create({
   },
   textBlock: { flex: 1 },
   label: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -386,9 +319,81 @@ const ringStyles = StyleSheet.create({
 export default function LoanEligibilityScreen({ navigation, route }: any) {
   const maxAmount: number = route?.params?.maxAmount ?? 80000;
 
-  const passedCriteria = CRITERIA.filter(passesCriterion);
-  const failedCriteria = CRITERIA.filter((c) => !passesCriterion(c));
-  const isEligible = failedCriteria.length === 0;
+  const [scoreData, setScoreData] = useState<any>(null);
+
+  React.useEffect(() => {
+    import("../api/client").then(({ apiClient }) => {
+       apiClient.get("/credit-scores/me")
+         .then(res => setScoreData(res.data))
+         .catch(console.error);
+    });
+  }, []);
+
+  const memberData = {
+    monthsAsMember: scoreData?.totalMonthsTracked || 0,
+    creditScore: scoreData?.score || 300,
+    onTimeRate: scoreData?.paymentConsistencyScore || 0,
+    totalContributed: scoreData?.totalContributed || 0,
+    activeLoans: 0,
+    hasDefaultHistory: (scoreData?.penaltyRecordScore || 100) < 70,
+  };
+
+  const criteria: Criterion[] = [
+    {
+      id: "tenure",
+      label: "Minimum membership",
+      description: "You must have been an active member for at least 6 months.",
+      icon: "calendar",
+      current: memberData.monthsAsMember,
+      required: 6,
+      unit: "months",
+      format: (v) => `${v} month${v !== 1 ? "s" : ""}`,
+    },
+    {
+      id: "score",
+      label: "Hazina Credit Score",
+      description: "Your score is built from payment consistency, loan history, and tenure.",
+      icon: "bar-chart-2",
+      current: memberData.creditScore,
+      required: 600,
+      unit: "pts",
+      format: (v) => `${v} / 850`,
+    },
+    {
+      id: "ontime",
+      label: "On-time payment rate",
+      description: "At least 75% of your contributions must have been paid on time.",
+      icon: "check-circle",
+      current: memberData.onTimeRate,
+      required: 75,
+      unit: "%",
+      format: (v) => `${v}%`,
+    },
+    {
+      id: "contributions",
+      label: "Total contributed",
+      description: "You must have contributed at least KES 30,000 across all cycles.",
+      icon: "trending-up",
+      current: memberData.totalContributed,
+      required: 30000,
+      unit: "KES",
+      format: (v) => `KES ${v.toLocaleString()}`,
+    },
+    {
+      id: "loans",
+      label: "No active defaults",
+      description: "You must have no outstanding loan defaults or active loan penalties.",
+      icon: "shield",
+      current: memberData.hasDefaultHistory ? 1 : 0,
+      required: 0,
+      unit: "defaults",
+      format: (v) => (v === 0 ? "Clean record" : `${v} default${v !== 1 ? "s" : ""}`),
+    },
+  ];
+
+  const passedCriteria = criteria.filter(passesCriterion);
+  const failedCriteria = criteria.filter((c) => !passesCriterion(c));
+  const isEligible = failedCriteria.length === 0 && scoreData !== null;
 
   // Estimate months until eligible (based on longest failing criterion)
   const monthsToEligible = !isEligible
@@ -414,7 +419,7 @@ export default function LoanEligibilityScreen({ navigation, route }: any) {
       >
         {/* ── Dark hero ── */}
         <LinearGradient
-          colors={[Colors.surfaceDeepDark, Colors.surfaceDark, "#0D2E22"]}
+          colors={[Colors.surfaceDeepDark, Colors.surfaceDark, Colors.surfaceElevated]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -448,7 +453,7 @@ export default function LoanEligibilityScreen({ navigation, route }: any) {
 
             <EligibilityRing
               passedCount={passedCriteria.length}
-              total={CRITERIA.length}
+              total={criteria.length}
             />
           </View>
 
@@ -498,7 +503,7 @@ export default function LoanEligibilityScreen({ navigation, route }: any) {
                   { color: isEligible ? Colors.success : Colors.warning },
                 ]}
               >
-                {passedCriteria.length} of {CRITERIA.length} met
+                {passedCriteria.length} of {criteria.length} met
               </Text>
             </View>
           </View>
@@ -761,7 +766,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[4],
   },
   sectionTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -812,7 +817,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[3],
   },
   howTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -826,7 +831,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[4],
   },
   howBold: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
   },
@@ -865,7 +870,7 @@ const styles = StyleSheet.create({
     ...Shadow.xs,
   },
   banksTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,

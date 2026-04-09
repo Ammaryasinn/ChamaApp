@@ -6,6 +6,23 @@ export class LoanService {
   /**
    * Apply for a loan
    */
+  public static async getLoans(chamaId: string) {
+    return await prisma.loan.findMany({
+      where: { chamaId },
+      include: {
+        borrowerMember: {
+          include: { user: { select: { fullName: true, profilePhotoUrl: true } } },
+        },
+        votes: {
+          include: {
+            voterMember: { include: { user: { select: { fullName: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   public static async applyForLoan(
     chamaId: string,
     borrowerMemberId: string,

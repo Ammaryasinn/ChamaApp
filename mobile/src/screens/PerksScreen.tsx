@@ -54,7 +54,7 @@ const PARTNERS = [
     category: "food",
     initials: "JH",
     color: "#92400E",
-    bg: "#FEF3C7",
+    bg: Colors.surfaceElevated,
     deals: 1,
     featured: true,
   },
@@ -65,7 +65,7 @@ const PARTNERS = [
     category: "tech",
     initials: "JM",
     color: "#D97706",
-    bg: "#FEF3C7",
+    bg: Colors.surfaceElevated,
     deals: 3,
     featured: true,
   },
@@ -76,7 +76,7 @@ const PARTNERS = [
     category: "appliances",
     initials: "HP",
     color: "#2563EB",
-    bg: "#EFF6FF",
+    bg: Colors.surfaceElevated,
     deals: 1,
     featured: true,
   },
@@ -97,8 +97,8 @@ const PARTNERS = [
     tagline: "Fashion for everyone",
     category: "fashion",
     initials: "MP",
-    color: "#7C3AED",
-    bg: "#F5F3FF",
+    color: Colors.accent,
+    bg: Colors.surfaceElevated,
     deals: 1,
     featured: false,
   },
@@ -130,7 +130,7 @@ const DEALS = [
     partnerName: "Jumia Kenya",
     partnerInitials: "JM",
     partnerColor: "#D97706",
-    partnerBg: "#FEF3C7",
+    partnerBg: Colors.surfaceElevated,
     category: "tech",
     title: "KES 500 off electronics",
     description:
@@ -149,7 +149,7 @@ const DEALS = [
     partnerName: "Hotpoint",
     partnerInitials: "HP",
     partnerColor: "#2563EB",
-    partnerBg: "#EFF6FF",
+    partnerBg: Colors.surfaceElevated,
     category: "appliances",
     title: "15% off kitchen appliances",
     description:
@@ -168,7 +168,7 @@ const DEALS = [
     partnerName: "Java House",
     partnerInitials: "JH",
     partnerColor: "#92400E",
-    partnerBg: "#FEF3C7",
+    partnerBg: Colors.surfaceElevated,
     category: "food",
     title: "Buy 1 get 1 free — any coffee",
     description:
@@ -205,8 +205,8 @@ const DEALS = [
     partnerId: "6",
     partnerName: "Mr Price",
     partnerInitials: "MP",
-    partnerColor: "#7C3AED",
-    partnerBg: "#F5F3FF",
+    partnerColor: Colors.accent,
+    partnerBg: Colors.surfaceElevated,
     category: "fashion",
     title: "25% off full-price clothing",
     description:
@@ -225,7 +225,7 @@ const DEALS = [
     partnerName: "Jumia Kenya",
     partnerInitials: "JM",
     partnerColor: "#D97706",
-    partnerBg: "#FEF3C7",
+    partnerBg: Colors.surfaceElevated,
     category: "tech",
     title: "Free delivery on any order",
     description:
@@ -302,7 +302,7 @@ const partnerStyles = StyleSheet.create({
     fontWeight: FontWeight.extraBold,
   },
   name: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xs,
     fontFamily: FontFamily.semiBold,
     fontWeight: FontWeight.semiBold,
@@ -519,7 +519,7 @@ const dealStyles = StyleSheet.create({
   },
   partnerMeta: { flex: 1 },
   partnerName: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.sm,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -544,7 +544,7 @@ const dealStyles = StyleSheet.create({
   },
 
   title: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.lg,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -681,24 +681,17 @@ export default function PerksScreen({ navigation }: any) {
       >
         {/* ── Dark hero ── */}
         <LinearGradient
-          colors={[Colors.surfaceDeepDark, Colors.surfaceDark, "#0D2E22"]}
+          colors={[Colors.surfaceDeepDark, Colors.surfaceDark, Colors.surfaceElevated]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
           {/* Header row */}
           <View style={styles.heroHeader}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={styles.backBtn}
-              hitSlop={12}
-            >
-              <Feather
-                name="arrow-left"
-                size={20}
-                color={Colors.textInverseSoft}
-              />
-            </Pressable>
+            <Text style={styles.heroLogo}>
+              <Text style={{ color: "#E8D6B5" }}>Hazi</Text>
+              <Text style={{ color: "#F59E0B" }}>na</Text>
+            </Text>
             <Pressable style={styles.searchBtn} hitSlop={8}>
               <Feather name="search" size={18} color={Colors.textInverseSoft} />
             </Pressable>
@@ -873,7 +866,7 @@ export default function PerksScreen({ navigation }: any) {
 
           {/* Become a partner banner */}
           <LinearGradient
-            colors={[Colors.surfaceDark, "#0D2E22"]}
+            colors={[Colors.surfaceDark, Colors.surfaceElevated]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.partnerBanner}
@@ -965,6 +958,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  heroLogo: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 24,
+    fontWeight: "800" as const,
+    letterSpacing: -0.4,
+  },
   searchBtn: {
     width: 40,
     height: 40,
@@ -997,7 +996,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[2],
   },
   heroTitle: {
-    color: Colors.textInverse,
+    color: Colors.textPrimary,
     fontSize: FontSize["6xl"],
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -1071,7 +1070,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[4],
   },
   sectionTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -1193,7 +1192,7 @@ const styles = StyleSheet.create({
   },
   emptyIcon: { fontSize: 40, marginBottom: Spacing[4] },
   emptyTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,
@@ -1275,7 +1274,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[4],
   },
   howTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.extraBold,
     fontWeight: FontWeight.extraBold,
@@ -1314,7 +1313,7 @@ const styles = StyleSheet.create({
   },
   howStepText: { flex: 1 },
   howStepTitle: {
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
     fontWeight: FontWeight.bold,

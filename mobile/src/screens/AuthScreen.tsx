@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
+import { View, Text, Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -14,6 +12,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
+import { authApi } from "../lib/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Hazina logo
@@ -21,10 +21,10 @@ import { Colors, FontFamily, FontSize, Radius, Spacing } from "../theme";
 
 function HazinaLogo({ size = 32 }: { size?: number }) {
   return (
-    <Text style={[S.logo, { fontSize: size }]}>
-      <Text style={{ color: "#FFFFFF" }}>Hazi</Text>
-      <Text style={{ color: "#F59E0B" }}>na</Text>
-    </Text>
+    <Image 
+      source={require("../../assets/images/logo.png")} 
+      style={{ width: size * 4, height: size * 4, resizeMode: "contain" }} 
+    />
   );
 }
 
@@ -46,10 +46,17 @@ function HeroCircles() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PhoneInput({
-  value, onChangeText, focused, onFocus, onBlur,
+  value,
+  onChangeText,
+  focused,
+  onFocus,
+  onBlur,
 }: {
-  value: string; onChangeText: (v: string) => void;
-  focused: boolean; onFocus: () => void; onBlur: () => void;
+  value: string;
+  onChangeText: (v: string) => void;
+  focused: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
 }) {
   return (
     <View style={[S.phoneRow, focused ? S.phoneRowFocused : S.phoneRowBlur]}>
@@ -74,15 +81,24 @@ function PhoneInput({
 //  Sign-in view
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SignInView({
+function AuthEntryView({
+  mode,
+  onToggleMode,
   onSendOtp,
-  onCreateAccount,
 }: {
-  onSendOtp: (phone: string) => void;
-  onCreateAccount: () => void;
+  mode: "signin" | "signup";
+  onToggleMode: () => void;
+  onSendOtp: (
+    phone: string,
+    extraData?: { fullName: string; nationalId: string },
+  ) => void;
 }) {
   const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [nationalId, setNationalId] = useState("");
   const [focused, setFocused] = useState(false);
+
+  const isSignUp = mode === "signup";
 
   return (
     <>
@@ -93,15 +109,49 @@ function SignInView({
           <HazinaLogo size={34} />
           <Text style={S.heroTagline}>Your group's financial home</Text>
           <Text style={S.heroSub}>
-            Manage contributions, track savings, and unlock bank loans — together.
+            Manage contributions, track savings, and unlock bank loans —
+            together.
           </Text>
         </View>
       </View>
 
       {/* Content */}
       <View style={S.content}>
-        <Text style={S.contentTitle}>Welcome back</Text>
-        <Text style={S.contentSub}>Sign in with your phone number</Text>
+        <Text style={S.contentTitle}>
+          {isSignUp ? "Create an account" : "Welcome back"}
+        </Text>
+        <Text style={S.contentSub}>
+          {isSignUp
+            ? "Enter your phone number to sign up"
+            : "Sign in with your phone number"}
+        </Text>
+
+        {isSignUp && (
+          <>
+            <Text style={S.fieldLabel}>FULL NAME</Text>
+            <View style={[S.phoneRow, S.phoneRowBlur]}>
+              <TextInput
+                style={[S.phoneInput, { outlineStyle: "none" } as any]}
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="E.g. John Doe"
+                placeholderTextColor={Colors.textMuted}
+              />
+            </View>
+
+            <Text style={S.fieldLabel}>NATIONAL ID</Text>
+            <View style={[S.phoneRow, S.phoneRowBlur]}>
+              <TextInput
+                style={[S.phoneInput, { outlineStyle: "none" } as any]}
+                value={nationalId}
+                onChangeText={setNationalId}
+                placeholder="E.g. 12345678"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="number-pad"
+              />
+            </View>
+          </>
+        )}
 
         <Text style={S.fieldLabel}>PHONE NUMBER</Text>
         <PhoneInput
@@ -113,28 +163,51 @@ function SignInView({
         />
 
         <TouchableOpacity
-          style={[S.btnPrimary, !phone && S.btnDisabled]}
-          onPress={() => phone && onSendOtp(phone)}
+          style={[
+            S.btnPrimary,
+            (!phone || (isSignUp && (!fullName || !nationalId))) &&
+              S.btnDisabled,
+          ]}
+          onPress={async () => {
+            if (!phone) return;
+            if (isSignUp && (!fullName || !nationalId)) return;
+            try {
+              const fullPhone = phone.startsWith("+") ? phone : `+254${phone}`;
+              await authApi.requestOtp(fullPhone);
+              onSendOtp(phone, isSignUp ? { fullName, nationalId } : undefined);
+            } catch (e: any) {
+              alert(e?.response?.data?.error || "Failed to send OTP");
+            }
+          }}
           activeOpacity={0.85}
         >
-          <Text style={S.btnPrimaryText}>Send OTP code</Text>
+          <Text style={S.btnPrimaryText}>
+            {isSignUp ? "Sign up" : "Log in"}
+          </Text>
           <Feather name="arrow-right" size={18} color="#fff" />
         </TouchableOpacity>
 
         <View style={S.dividerRow}>
           <View style={S.dividerLine} />
-          <Text style={S.dividerText}>New to Hazina?</Text>
+          <Text style={S.dividerText}>
+            {isSignUp ? "Already have an account?" : "New to Hazina?"}
+          </Text>
           <View style={S.dividerLine} />
         </View>
 
-        <TouchableOpacity style={S.btnSecondary} onPress={onCreateAccount} activeOpacity={0.85}>
-          <Text style={S.btnSecondaryText}>Create an account</Text>
+        <TouchableOpacity
+          style={S.btnSecondary}
+          onPress={onToggleMode}
+          activeOpacity={0.85}
+        >
+          <Text style={S.btnSecondaryText}>
+            {isSignUp ? "Log in instead" : "Create an account"}
+          </Text>
         </TouchableOpacity>
 
         <Text style={S.terms}>
-          By continuing you agree to our{" "}
-          <Text style={S.termsLink}>Terms</Text> and{" "}
-          <Text style={S.termsLink}>Privacy Policy</Text>
+          By continuing you agree to our <Text style={S.termsLink}>Terms</Text>{" "}
+          and <Text style={S.termsLink}>Privacy Policy</Text>
         </Text>
       </View>
     </>
@@ -151,7 +224,7 @@ function OtpView({
   onBack,
 }: {
   phone: string;
-  onVerify: () => void;
+  onVerify: (user: any) => void;
   onBack: () => void;
 }) {
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
@@ -171,11 +244,18 @@ function OtpView({
     const next = [...digits];
     next[idx] = text;
     setDigits(next);
-    if (text && idx < 5) { refs[idx + 1].current?.focus(); setFocusedIndex(idx + 1); }
-    if (!text && idx > 0) { refs[idx - 1].current?.focus(); setFocusedIndex(idx - 1); }
+    if (text && idx < 5) {
+      refs[idx + 1].current?.focus();
+      setFocusedIndex(idx + 1);
+    }
+    if (!text && idx > 0) {
+      refs[idx - 1].current?.focus();
+      setFocusedIndex(idx - 1);
+    }
   };
 
-  const formatted = "+254 " + phone.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
+  const formatted =
+    "+254 " + phone.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
 
   return (
     <>
@@ -205,8 +285,8 @@ function OtpView({
               ref={refs[i] as React.RefObject<TextInput>}
               style={[
                 S.otpBox,
-                d        ? S.otpBoxFilled  : null,
-                focusedIndex === i ? S.otpBoxActive  : null,
+                d ? S.otpBoxFilled : null,
+                focusedIndex === i ? S.otpBoxActive : null,
               ]}
               value={d}
               onChangeText={(t) => handleChange(t, i)}
@@ -221,7 +301,20 @@ function OtpView({
 
         <TouchableOpacity
           style={[S.btnPrimary, !complete && S.btnDisabled]}
-          onPress={complete ? onVerify : undefined}
+          onPress={async () => {
+            if (!complete) return;
+            try {
+              const fullPhone = phone.startsWith("+") ? phone : `+254${phone}`;
+              const res = await authApi.verifyOtp(fullPhone, digits.join(""));
+              await AsyncStorage.setItem(
+                "hazina.accessToken",
+                res.data.accessToken,
+              );
+              onVerify(res.data.user);
+            } catch (e: any) {
+              alert(e?.response?.data?.error || "Invalid verification code");
+            }
+          }}
           activeOpacity={0.85}
         >
           <Feather name="arrow-right" size={18} color="#fff" />
@@ -250,14 +343,24 @@ function OtpView({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AuthScreen({ navigation }: any) {
-  const [step, setStep] = useState<"signin" | "otp">("signin");
+  const [step, setStep] = useState<"signup" | "signin" | "otp">("signup");
   const [phone, setPhone] = useState("");
+  const [signupData, setSignupData] = useState<{
+    fullName: string;
+    nationalId: string;
+  }>();
 
-  const handleVerify = () => {
-    // Simulate: numbers starting with 71x are "existing" users
-    // In production this would hit the API
-    const isExistingUser = phone.startsWith("71");
-    if (isExistingUser) {
+  const handleVerify = async (user: any) => {
+    try {
+      if (signupData) {
+        await authApi.updateProfile(signupData);
+        user.fullName = signupData.fullName;
+      }
+    } catch (e) {
+      console.error("Failed to update profile", e);
+    }
+
+    if (user.isVerified || user.fullName !== "User") {
       navigation.replace("MainTabs");
     } else {
       navigation.replace("Onboarding");
@@ -267,23 +370,33 @@ export default function AuthScreen({ navigation }: any) {
   return (
     <SafeAreaView style={S.screen}>
       <StatusBar style="light" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {step === "signin" ? (
-            <SignInView
-              onSendOtp={(p) => { setPhone(p); setStep("otp"); }}
-              onCreateAccount={() => navigation.navigate("Onboarding")}
+          {step === "signin" || step === "signup" ? (
+            <AuthEntryView
+              mode={step}
+              onToggleMode={() =>
+                setStep(step === "signup" ? "signin" : "signup")
+              }
+              onSendOtp={(p, extra) => {
+                setPhone(p);
+                if (extra) setSignupData(extra);
+                setStep("otp");
+              }}
             />
           ) : (
             <OtpView
               phone={phone}
               onVerify={handleVerify}
-              onBack={() => setStep("signin")}
+              onBack={() => setStep("signup")}
             />
           )}
         </ScrollView>
@@ -303,10 +416,10 @@ const S = StyleSheet.create({
   hero: {
     backgroundColor: Colors.primary,
     paddingHorizontal: Spacing[6],
-    paddingTop: 60,           // extra top room
-    paddingBottom: 44,        // extra bottom room before the white card
+    paddingTop: 60, // extra top room
+    paddingBottom: 44, // extra bottom room before the white card
     overflow: "hidden",
-    minHeight: 260,           // taller than before
+    minHeight: 260, // taller than before
   },
   heroShort: {
     paddingTop: 44,
@@ -320,12 +433,22 @@ const S = StyleSheet.create({
   },
 
   circleTopRight: {
-    position: "absolute", width: 240, height: 240, borderRadius: 120,
-    backgroundColor: "rgba(255,255,255,0.05)", top: -70, right: -70,
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    top: -70,
+    right: -70,
   },
   circleBottomLeft: {
-    position: "absolute", width: 180, height: 180, borderRadius: 90,
-    backgroundColor: "rgba(245,158,11,0.10)", bottom: -60, left: -50,
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(245,158,11,0.10)",
+    bottom: -60,
+    left: -50,
   },
 
   logo: {
@@ -336,14 +459,14 @@ const S = StyleSheet.create({
   heroTagline: {
     fontFamily: FontFamily.heading,
     fontSize: 16,
-    color: "#FFFFFF",
+    color: "#E8D6B5",
     fontWeight: "700",
     marginTop: 4,
   },
   heroTaglineCompact: {
     fontFamily: FontFamily.heading,
     fontSize: 18,
-    color: "#FFFFFF",
+    color: "#E8D6B5",
     fontWeight: "700",
     marginTop: 8,
   },
@@ -355,15 +478,18 @@ const S = StyleSheet.create({
   },
 
   backBtn: {
-    width: 28, height: 28, borderRadius: 14,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // ── White content area ───────────────────────────────────────────────────
   content: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing[6],
     paddingTop: Spacing[6],
     paddingBottom: Spacing[10],
@@ -372,7 +498,7 @@ const S = StyleSheet.create({
   contentTitle: {
     fontFamily: FontFamily.extraBold,
     fontSize: 20,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     fontWeight: "800",
     marginBottom: 4,
   },
@@ -394,16 +520,34 @@ const S = StyleSheet.create({
 
   // ── Phone input ─────────────────────────────────────────────────────────
   phoneRow: {
-    flexDirection: "row", alignItems: "center",
-    borderRadius: Radius.badge, borderWidth: 1,
-    paddingHorizontal: Spacing[4], height: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: Radius.badge,
+    borderWidth: 1,
+    paddingHorizontal: Spacing[4],
+    height: 52,
     marginBottom: Spacing[5],
   },
-  phoneRowBlur:    { backgroundColor: "#F6F9F7", borderColor: "#EBF1EF" },
+  phoneRowBlur: { backgroundColor: "#F6F9F7", borderColor: "#EBF1EF" },
   phoneRowFocused: { backgroundColor: "#E8F7F4", borderColor: Colors.primary },
-  prefix:      { fontFamily: FontFamily.medium, fontSize: FontSize.base, color: Colors.textPrimary, marginRight: Spacing[3] },
-  phoneDivider:{ width: 1, height: 20, backgroundColor: "#EBF1EF", marginRight: Spacing[3] },
-  phoneInput:  { flex: 1, fontFamily: FontFamily.regular, fontSize: FontSize.base, color: Colors.textPrimary },
+  prefix: {
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.base,
+    color: "#E8D6B5",
+    marginRight: Spacing[3],
+  },
+  phoneDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#EBF1EF",
+    marginRight: Spacing[3],
+  },
+  phoneInput: {
+    flex: 1,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.base,
+    color: "#E8D6B5",
+  },
 
   // ── OTP boxes — fixed size so 6 fit on any screen ──────────────────────────
   otpRow: {
@@ -415,8 +559,8 @@ const S = StyleSheet.create({
   },
   otpBox: {
     flex: 1,
-    height: 56,             // fixed height — no aspectRatio
-    minWidth: 0,            // allow shrinking below content width
+    height: 56, // fixed height — no aspectRatio
+    minWidth: 0, // allow shrinking below content width
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: "#EBF1EF",
@@ -424,7 +568,7 @@ const S = StyleSheet.create({
     textAlign: "center",
     fontFamily: FontFamily.heading,
     fontSize: 22,
-    color: Colors.textPrimary,
+    color: "#E8D6B5",
     paddingVertical: 0,
   },
   otpBoxFilled: {
@@ -439,27 +583,68 @@ const S = StyleSheet.create({
 
   // ── Buttons ─────────────────────────────────────────────────────────────
   btnPrimary: {
-    backgroundColor: Colors.primary, borderRadius: Radius.button,
-    height: 52, flexDirection: "row", alignItems: "center",
-    justifyContent: "center", gap: 8, marginBottom: Spacing[5],
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.button,
+    height: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: Spacing[5],
   },
-  btnPrimaryText: { fontFamily: FontFamily.heading, fontSize: 16, color: "#FFFFFF", fontWeight: "700" },
+  btnPrimaryText: {
+    fontFamily: FontFamily.heading,
+    fontSize: 16,
+    color: "#E8D6B5",
+    fontWeight: "700",
+  },
   btnDisabled: { opacity: 0.42 },
 
-  dividerRow:  { flexDirection: "row", alignItems: "center", gap: Spacing[3], marginBottom: Spacing[4] },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing[3],
+    marginBottom: Spacing[4],
+  },
   dividerLine: { flex: 1, height: 1, backgroundColor: "#EBF1EF" },
-  dividerText: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted },
+  dividerText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
 
   btnSecondary: {
-    borderRadius: Radius.button, height: 52, borderWidth: 1.5,
-    borderColor: "#EBF1EF", alignItems: "center", justifyContent: "center", marginBottom: Spacing[6],
+    borderRadius: Radius.button,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: "#EBF1EF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing[6],
   },
-  btnSecondaryText: { fontFamily: FontFamily.heading, fontSize: 15, color: Colors.textPrimary, fontWeight: "700" },
+  btnSecondaryText: {
+    fontFamily: FontFamily.heading,
+    fontSize: 15,
+    color: "#E8D6B5",
+    fontWeight: "700",
+  },
 
-  terms:     { fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, textAlign: "center", lineHeight: 16 },
+  terms: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: "center",
+    lineHeight: 16,
+  },
   termsLink: { color: Colors.primary, fontFamily: FontFamily.semiBold },
 
-  resendRow:   { textAlign: "center", fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textMuted, marginTop: 16 },
+  resendRow: {
+    textAlign: "center",
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: Colors.textMuted,
+    marginTop: 16,
+  },
   resendMuted: { color: Colors.textMuted, fontFamily: FontFamily.medium },
-  resendLink:  { color: Colors.primary, fontFamily: FontFamily.semiBold },
+  resendLink: { color: Colors.primary, fontFamily: FontFamily.semiBold },
 });

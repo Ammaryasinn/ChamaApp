@@ -296,14 +296,14 @@ const S = StyleSheet.create({
   heroNav: { flexDirection: "row", alignItems: "center", gap: 10 },
   backBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   heroNavTitle: { fontFamily: FontFamily.medium, fontSize: 14, color: "rgba(255,255,255,0.9)" },
-  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 26, color: "#FFFFFF", fontWeight: "800", letterSpacing: -0.5 },
+  heroTitle: { fontFamily: FontFamily.extraBold, fontSize: 26, color: "#E8D6B5", fontWeight: "800", letterSpacing: -0.5 },
   heroSub:   { fontFamily: FontFamily.regular, fontSize: 13, color: "rgba(255,255,255,0.65)" },
 
   // Scroll
   scroll: { backgroundColor: "#F6F9F7", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 100, gap: 16 },
 
   // Plan cards
-  card: { backgroundColor: "#FFFFFF", borderRadius: 16, borderWidth: 1, borderColor: "#EBF1EF", overflow: "hidden" },
+  card: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: "#EBF1EF", overflow: "hidden" },
   cardFeatured: { borderWidth: 1.5, borderColor: "#EBF1EF" },
 
   // Card headers
@@ -316,19 +316,19 @@ const S = StyleSheet.create({
   badgeFree:    { alignSelf: "flex-start", backgroundColor: "#E8F7F4", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
   badgeFreeText:{ fontFamily: FontFamily.heading, fontSize: 11, color: "#085041", fontWeight: "700" },
   badgePremium: { alignSelf: "flex-start", backgroundColor: "#F59E0B", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
-  badgePremiumText: { fontFamily: FontFamily.heading, fontSize: 11, color: "#FFFFFF", fontWeight: "700" },
+  badgePremiumText: { fontFamily: FontFamily.heading, fontSize: 11, color: "#E8D6B5", fontWeight: "700" },
   badgeTaasisi: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
-  badgeTaasisiText: { fontFamily: FontFamily.heading, fontSize: 11, color: "#FFFFFF", fontWeight: "700" },
+  badgeTaasisiText: { fontFamily: FontFamily.heading, fontSize: 11, color: "#E8D6B5", fontWeight: "700" },
 
   // Plan title + pricing
-  planName:      { fontFamily: FontFamily.extraBold, fontSize: 22, color: Colors.textPrimary, fontWeight: "800" },
-  planNameWhite: { color: "#FFFFFF" },
+  planName:      { fontFamily: FontFamily.extraBold, fontSize: 22, color: "#E8D6B5", fontWeight: "800" },
+  planNameWhite: { color: "#E8D6B5" },
   priceRow:      { flexDirection: "row", alignItems: "baseline", gap: 2 },
-  priceCurrency: { fontFamily: FontFamily.heading, fontSize: 14, color: Colors.textPrimary, fontWeight: "700", marginBottom: 3 },
-  priceAmount:   { fontFamily: FontFamily.extraBold, fontSize: 38, color: Colors.textPrimary, fontWeight: "800", letterSpacing: -1, lineHeight: 44 },
+  priceCurrency: { fontFamily: FontFamily.heading, fontSize: 14, color: "#E8D6B5", fontWeight: "700", marginBottom: 3 },
+  priceAmount:   { fontFamily: FontFamily.extraBold, fontSize: 38, color: "#E8D6B5", fontWeight: "800", letterSpacing: -1, lineHeight: 44 },
   priceAmountLarge: { fontSize: 42 },
   pricePer:      { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.textMuted },
-  priceWhite:    { color: "#FFFFFF" },
+  priceWhite:    { color: "#E8D6B5" },
   priceWhiteLight:{ color: "rgba(255,255,255,0.7)" },
   planCaption:   { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted },
   planCaptionWhite: { fontFamily: FontFamily.heading, fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: "700", marginTop: 2 },
@@ -336,7 +336,7 @@ const S = StyleSheet.create({
   // Slider section — sits between header & features with a top border
   sliderSection: {
     borderTopWidth: 1, borderTopColor: "#EBF1EF",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: Colors.background,
     paddingHorizontal: 16, paddingVertical: 14, gap: 12,
   },
   sliderWrap: { gap: 8 },
@@ -344,14 +344,14 @@ const S = StyleSheet.create({
   sliderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   stepBtn: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#EBF1EF",
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: "#EBF1EF",
     alignItems: "center", justifyContent: "center",
   },
   stepBtnText: { fontFamily: FontFamily.heading, fontSize: 18, color: Colors.primary, lineHeight: 22, fontWeight: "700" },
   trackContainer: { flex: 1, height: 6, position: "relative" },
   trackBg:     { position: "absolute", left: 0, right: 0, height: 6, backgroundColor: "#EBF1EF", borderRadius: 3 },
   trackFill:   { position: "absolute", left: 0, height: 6, backgroundColor: Colors.primary, borderRadius: 3 },
-  trackThumb:  { position: "absolute", top: -7, width: 20, height: 20, borderRadius: 10, backgroundColor: "#FFFFFF", borderWidth: 2.5, borderColor: Colors.primary },
+  trackThumb:  { position: "absolute", top: -7, width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 2.5, borderColor: Colors.primary },
   sliderValue: { fontFamily: FontFamily.extraBold, fontSize: 18, color: Colors.primary, fontWeight: "800", minWidth: 28, textAlign: "center" },
   sliderUnit:  { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textMuted },
 
@@ -379,7 +379,7 @@ const S = StyleSheet.create({
   // Feature list
   featureList: { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  featureText: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.textPrimary, flex: 1 },
+  featureText: { fontFamily: FontFamily.regular, fontSize: 13, color: "#E8D6B5", flex: 1 },
   featureTextAmber: { color: "#D97706", fontFamily: FontFamily.heading, fontWeight: "700" },
   featureTextMuted: { color: Colors.textMuted },
 
@@ -396,7 +396,7 @@ const S = StyleSheet.create({
     borderRadius: Radius.button, height: 52,
     alignItems: "center", justifyContent: "center",
   },
-  upgradePrimaryText: { fontFamily: FontFamily.heading, fontSize: 15, color: "#FFFFFF", fontWeight: "700" },
+  upgradePrimaryText: { fontFamily: FontFamily.heading, fontSize: 15, color: "#E8D6B5", fontWeight: "700" },
 
   taasisiNote: { textAlign: "center", fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textMuted, paddingBottom: 16 },
 });

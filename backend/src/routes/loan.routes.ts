@@ -4,6 +4,20 @@ import { authMiddleware } from '../middleware/auth';
 
 export const loanRouter = Router({ mergeParams: true });
 
+/**
+ * Get Loans
+ * GET /api/chamas/:id/loans
+ */
+loanRouter.get("/", async (req: Request, res: Response) => {
+  try {
+    const loans = await LoanService.getLoans(req.params.id as string);
+    res.status(200).json(loans);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+
 loanRouter.use(authMiddleware);
 
 /**
